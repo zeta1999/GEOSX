@@ -554,6 +554,9 @@ void SiloFile::WriteMeshObject(string const & meshName,
                                real64 const problemTime)
 {
 
+ // GEOSX_LOG ("XXXX I AM WRITING A MESH OBJECT!!!");
+ // GEOSX_LOG ("MY MESH NAME IS " << meshName);
+
   const DBdatatype datatype = DB_DOUBLE;
   int const one = 1;
 
@@ -587,6 +590,7 @@ void SiloFile::WriteMeshObject(string const & meshName,
     else
       lnodelist += -shapesize[i];
   }
+  // GEOSX_LOG ("THE VALUE OF LNODELIST (int) is " << lnodelist);
 
 
   if( numTotZones == 0 )
@@ -622,9 +626,12 @@ void SiloFile::WriteMeshObject(string const & meshName,
         n = -shapesize[i];
       for( int j = 0 ; j < n ; ++j )
       {
+        // GEOSX_LOG("CONNECTIVITY VALUE AT INDEX/COUNT " << count << " IS " << meshConnectivity[i][j]);
         nodelist[count++] = meshConnectivity[i][j];
       }
     }
+
+    // GEOSX_LOG ("THE VALUE OF COUNT (int) is " << count);
 
     if( globalElementNum != nullptr )
     {

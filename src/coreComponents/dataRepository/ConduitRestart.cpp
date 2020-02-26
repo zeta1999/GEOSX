@@ -30,6 +30,7 @@
 
 // TPL includes
 #include <conduit_relay.hpp>
+#include <conduit_blueprint.hpp>
 
 namespace geosx
 {
@@ -52,6 +53,9 @@ std::string writeRootNode( std::string const & rootPath )
 
     conduit::relay::io::save( root, rootPath + ".root", "hdf5" );
 
+    //Added for JSON output
+    conduit::relay::io::save( root, rootPath + ".root.json", "json" );
+
     std::string cmd = "mkdir -p " + rootPath;
     int ret = std::system( cmd.c_str());
     GEOSX_WARNING_IF( ret != 0, "Failed to create directory: command '" << cmd << "' exited with code " << std::to_string( ret ) );
@@ -59,7 +63,8 @@ std::string writeRootNode( std::string const & rootPath )
 
   MpiWrapper::Barrier( MPI_COMM_GEOSX );
 
-  return fmt::sprintf( rootPath + "/rank_%07d.hdf5", MpiWrapper::Comm_rank() );
+  // return fmt::sprintf( rootPath + "/rank_%07d.hdf5", MpiWrapper::Comm_rank() );
+  return fmt::sprintf( rootPath + "/rank_%07d", MpiWrapper::Comm_rank() );
 }
 
 
@@ -92,17 +97,35 @@ void writeTree( std::string const & path )
 {
   GEOSX_MARK_FUNCTION;
 
+  // GEOSX_LOG(" PRINTING OUT ROOT CONDUIT NODE BEFORE writeRootNode");
+  // rootConduitNode.print();
   std::string const filePathForRank = writeRootNode( path );
-  GEOSX_LOG_RANK( "Writing out restart file at " << filePathForRank );
-  conduit::relay::io::save( rootConduitNode, filePathForRank, "hdf5" );
-}
+  GEOSX_LOG( "Writing out restart file at " << filePathForRank );
+  conduit::relay::io::save( rootConduitNode, filePathForRank + ".hdf5", "hdf5" );
 
+  //Added
+  conduit::relay::io::save( rootConduitNode, filePathForRank + ".json", "json" );
+  
+
+
+
+//  conduit::Node n_info;
+//   // check if n conforms
+// if(conduit::blueprint::verify("mesh",rootConduitNode,n_info))
+//     std::cout << "mesh verify succeeded." << std::endl;
+// else
+//     std::cout << "mesh verify failed!" << std::endl;
+
+// GEOSX_LOG("PRINTING OUT INFO FROM blueprint verify");
+// n_info.print();
+
+}
 
 void loadTree( std::string const & path )
 {
   GEOSX_MARK_FUNCTION;
   std::string const filePathForRank = readRootNode( path );
-  GEOSX_LOG_RANK( "Reading in restart file at " << filePathForRank );
+  GEOSX_LOG( "Reading in restart file at " << filePathForRank );
   conduit::relay::io::load( filePathForRank, "hdf5", rootConduitNode );
 }
 
