@@ -105,19 +105,70 @@ void writeTree( std::string const & path )
 
   //Added
   conduit::relay::io::save( rootConduitNode, filePathForRank + ".json", "json" );
+
+  // Testing mesh creation from restart output
+  conduit::Node mesh;
+  conduit::Node coords = rootConduitNode["Problem/domain/MeshBodies/mesh1/Level0/nodeManager/ReferencePosition/__values__"];
+  conduit::Node connectivity = rootConduitNode["Problem/domain/MeshBodies/mesh1/Level0/ElementRegions/elementRegionsGroup/Region2/elementSubRegions/cb1/nodeList/__values__"];
+ 
+  // create the coordinate set
+  int numNodes = coords.dtype().number_of_elements() / 3;
+  int y_offset = numNodes * sizeof(conduit::float64);
+  int z_offset = numNodes * sizeof(conduit::float64) * 2;
+
+  mesh["coordsets/coords/type"] = "explicit";
+  mesh["coordsets/coords/values"].set(coords);
+  mesh["coordsets/coords/values/x"].set_float64_ptr(
+    coords.as_float64_ptr(), numNodes);
+  mesh["coordsets/coords/values/y"].set_float64_ptr(
+    coords.as_float64_ptr(), numNodes, y_offset );
+  mesh["coordsets/coords/values/z"].set_float64_ptr(
+    coords.as_float64_ptr(), numNodes, z_offset );
   
+  // add the topology
+  mesh["topologies/topo/type"] = "unstructured";
+  mesh["topologies/topo/coordset"] = "coords";
+  mesh["topologies/topo/elements/shape"] = "hex";
+  mesh["topologies/topo/elements/connectivity"].set(connectivity);
 
+  // GEOSX_LOG("number of coordinates is: " << numNodes);
+  // GEOSX_LOG("coordinates contiguous:");
+  // coords.print();
+  // GEOSX_LOG("coordinates contiguous type is: " << coords.dtype().name());
+  // GEOSX_LOG("coordinates contiguous number of elements is: " << coords.dtype().number_of_elements());
+  // GEOSX_LOG("coordinates contiguous id is: " << coords.dtype().id());
+  // GEOSX_LOG("coordinates contiguous is an object T/F: " << coords.dtype().is_object());
+  // GEOSX_LOG("coordinates contiguous is a list T/F: " << coords.dtype().is_list());
 
+  // conduit::float64_array arrayCoords = coords.as_float64_array();
+  // GEOSX_LOG("coordinates contiguous 1st element is: " << arrayCoords[0] );
+  // GEOSX_LOG("coordinates contiguous 6th element is: " << arrayCoords[5] );
 
-//  conduit::Node n_info;
-//   // check if n conforms
-// if(conduit::blueprint::verify("mesh",rootConduitNode,n_info))
-//     std::cout << "mesh verify succeeded." << std::endl;
-// else
-//     std::cout << "mesh verify failed!" << std::endl;
+  // GEOSX_LOG("\n\nx_coords is: ");
+  // mesh["coordsets/coords/values/x"].print();
+  // GEOSX_LOG("x_coords type is: " << mesh["coordsets/coords/values/x"].dtype().name());
+  // GEOSX_LOG("y_coords is: ");
+  // mesh["coordsets/coords/values/y"].print();
+  // GEOSX_LOG("z_coords is: ");
+  // mesh["coordsets/coords/values/z"].print();
+  // GEOSX_LOG("size of x coord type is " << sizeof(mesh["coordsets/coords/values/x"].dtype()));
+  // GEOSX_LOG("size of conduit's float64 is " << sizeof(conduit::float64));
+  // GEOSX_LOG("size of machine's float is " << sizeof(float));
+  // GEOSX_LOG("size of conduit's index_t is " << sizeof(conduit::index_t));
 
-// GEOSX_LOG("PRINTING OUT INFO FROM blueprint verify");
-// n_info.print();
+  conduit::Node n_info;
+  // check if n conforms
+  if(conduit::blueprint::verify("mesh",mesh,n_info))
+  {
+      GEOSX_LOG("mesh verify succeeded.");
+  }
+  else
+  {
+      GEOSX_LOG("mesh verify failed!");
+  }
+
+  conduit::relay::io_blueprint::save( mesh, "mesh.blueprint_root");
+  conduit::relay::io::save( n_info, filePathForRank + "_verify_info.json", "json" );
 
 }
 
