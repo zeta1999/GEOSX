@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.9)
 ################################
 project(geosx LANGUAGES C CXX)
 set(BLT_CXX_STD "c++14" CACHE STRING "Version of C++ standard")
-set( ENABLE_WARNINGS_AS_ERRORS "ON" CACHE PATH "")
+set( ENABLE_WARNINGS_AS_ERRORS "OFF" CACHE BOOL "" )
 set(CMAKE_ENABLE_EXPORTS ON)
 
 include(cmake/thirdparty/setupThirdPartyDirectory.cmake)

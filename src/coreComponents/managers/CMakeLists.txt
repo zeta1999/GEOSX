@@ -8,6 +8,7 @@ set(managers_headers
     Events/PeriodicEvent.hpp
     Events/HaltEvent.hpp
     Events/SoloEvent.hpp
+    Events/TestTarget.hpp
     Outputs/OutputManager.hpp
     Outputs/OutputBase.hpp
     Outputs/SiloOutput.hpp
@@ -40,6 +41,7 @@ set(managers_sources
     Events/PeriodicEvent.cpp
     Events/HaltEvent.cpp
     Events/SoloEvent.cpp
+    Events/TestTarget.cpp
     Outputs/OutputManager.cpp
     Outputs/OutputBase.cpp
     Outputs/SiloOutput.cpp
@@ -73,7 +75,7 @@ endif()
 if( BUILD_OBJ_LIBS )
   set( dependencyList dataRepository fileIO optionparser RAJA linearAlgebra conduit conduit_relay conduit_blueprint )
 else()
-  set( dependencyList common fileIO linearAlgebra optionparser RAJA mpiCommunications conduit conduit_relay conduit_blueprint )
+  set( dependencyList common fileIO linearAlgebra optionparser RAJA mpiCommunications conduit conduit_relay conduit_blueprint PAMELA )
 endif()
 
 if( ENABLE_MATHPRESSO )
