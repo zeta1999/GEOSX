@@ -34,6 +34,106 @@ namespace geosx
 namespace SolidMechanicsLagrangianFEMKernels
 {
 
+template< int N >
+GEOSX_HOST_DEVICE inline
+localIndex
+getNeighborNodes( localIndex (& neighborNodes )[ N ],
+                  arrayView1d< arrayView1d< arrayView2d< localIndex const, cells::NODE_MAP_USD > const > const > const & elemsToNodes,
+                  arraySlice1d< localIndex const > const nodeRegions,
+                  arraySlice1d< localIndex const > const nodeSubRegions,
+                  arraySlice1d< localIndex const > const nodeElems )
+{
+  localIndex numNeighbors = 0;
+  for( localIndex localElem = 0; localElem < nodeRegions.size(); ++localElem )
+  {
+    localIndex const er = nodeRegions[ localElem ];
+    localIndex const esr = nodeSubRegions[ localElem ];
+    localIndex const k = nodeElems[ localElem ];
+    for( localIndex localNode = 0; localNode < elemsToNodes[ er ][ esr ].size( 1 ); ++localNode )
+    {
+      neighborNodes[ numNeighbors++ ] = elemsToNodes[ er ][ esr ]( k, localNode );
+    }
+  }
+
+  GEOSX_ASSERT_GE( N, numNeighbors );
+  return LvArray::sortedArrayManipulation::makeSortedUnique( neighborNodes, neighborNodes + numNeighbors );
+}
+
+inline void
+sparsityGeneration( LvArray::CRSMatrix< real64, globalIndex, localIndex > & matrix,
+                    arrayView1d< arrayView1d< arrayView2d< localIndex const, cells::NODE_MAP_USD > const > const > const & elemsToNodes,
+                    ArrayOfArraysView< localIndex const > const & nodesToRegions,
+                    ArrayOfArraysView< localIndex const > const & nodesToSubRegions,
+                    ArrayOfArraysView< localIndex const > const & nodesToElems )
+{
+  GEOSX_MARK_FUNCTION;
+
+  constexpr int NDIM = 3;
+  constexpr int MAX_ELEMS_PER_NODE = 8;
+  constexpr int MAX_NODES_PER_ELEM = 8;
+  constexpr int MAX_NODE_NEIGHBORS = 27;
+  constexpr int MAX_COLUMNS_PER_ROW = NDIM * MAX_NODE_NEIGHBORS;
+
+  localIndex const numNodes = nodesToElems.size();
+
+  LvArray::SparsityPattern< globalIndex, localIndex > sparsity;
+
+  {
+    GEOSX_MARK_FUNCTION_TAG( resizing );
+
+    std::vector< localIndex > nnzPerRow( NDIM * numNodes );
+    forAll< parallelHostPolicy >( numNodes,
+    [&nnzPerRow, elemsToNodes, nodesToRegions, nodesToSubRegions, nodesToElems] ( localIndex const nodeID )
+    {
+      localIndex neighborNodes[ MAX_ELEMS_PER_NODE * MAX_NODES_PER_ELEM ];
+      localIndex const numNeighbors = getNeighborNodes( neighborNodes,
+                                                        elemsToNodes,
+                                                        nodesToRegions[ nodeID ],
+                                                        nodesToSubRegions[ nodeID ],
+                                                        nodesToElems[ nodeID ] );
+
+      GEOSX_ASSERT_GE( MAX_NODE_NEIGHBORS, numNeighbors );
+
+      for( int dim = 0; dim < NDIM; ++dim )
+      { nnzPerRow[ NDIM * nodeID + dim ] = NDIM * numNeighbors; }
+    } );
+
+    sparsity.resizeFromRowCapacities< parallelHostPolicy >( NDIM * numNodes, NDIM * numNodes, nnzPerRow.data() );
+  }
+
+  {
+    GEOSX_MARK_FUNCTION_TAG( inserting );
+
+    LvArray::SparsityPatternView< globalIndex, localIndex const > sparsityView = sparsity.toView();
+    forAll< parallelHostPolicy >( numNodes,
+    [sparsityView, elemsToNodes, nodesToRegions, nodesToSubRegions, nodesToElems] ( localIndex const nodeID )
+    {
+      localIndex neighborNodes[ MAX_ELEMS_PER_NODE * MAX_NODES_PER_ELEM ];
+      localIndex const numNeighbors = getNeighborNodes( neighborNodes,
+                                                        elemsToNodes,
+                                                        nodesToRegions[ nodeID ],
+                                                        nodesToSubRegions[ nodeID ],
+                                                        nodesToElems[ nodeID ] );
+
+      globalIndex dofNumbers[ MAX_COLUMNS_PER_ROW ];
+      for( localIndex i = 0; i < numNeighbors; ++i )
+      {
+        for( int dim = 0; dim < NDIM; ++dim )
+        { dofNumbers[ NDIM * i + dim ] = NDIM * neighborNodes[ i ] + dim; }
+      }
+
+      for( int dim = 0; dim < NDIM; ++dim )
+      {
+        sparsityView.insertNonZeros( NDIM * nodeID + dim, dofNumbers, dofNumbers + NDIM * numNeighbors );
+      }
+    } );
+  }
+
+  GEOSX_MARK_BEGIN( stealing );
+  matrix.stealFrom< parallelHostPolicy >( std::move( sparsity ) );
+  GEOSX_MARK_END( stealing );
+}
+
 inline void velocityUpdate( arrayView2d< real64, nodes::ACCELERATION_USD > const & acceleration,
                             arrayView2d< real64, nodes::VELOCITY_USD > const & velocity,
                             real64 const dt )
@@ -85,6 +185,100 @@ inline void displacementUpdate( arrayView2d< real64 const, nodes::VELOCITY_USD >
       uhat( i, j ) = velocity( i, j ) * dt;
       u( i, j ) += uhat( i, j );
     }
+  } );
+}
+
+
+void CRSApplyContactConstraint( DofManager const & dofManager,
+                                DomainPartition & domain,
+                                LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
+                                arrayView1d< real64 > const & rhs,
+                                ContactRelationBase const & contactRelation )
+{
+  GEOSX_MARK_FUNCTION;
+
+  MeshLevel * const mesh = domain.getMeshBodies()->GetGroup< MeshBody >( 0 )->getMeshLevel( 0 );
+  FaceManager const * const faceManager = mesh->getFaceManager();
+  NodeManager const & nodeManager = *mesh->getNodeManager();
+  ElementRegionManager * const elemManager = mesh->getElemManager();
+
+  real64 const contactStiffness = contactRelation.stiffness();
+
+  arrayView2d< real64 const, nodes::TOTAL_DISPLACEMENT_USD > const & u = nodeManager->totalDisplacement();
+  arrayView1d< R1Tensor > const & fc = nodeManager->getReference< array1d< R1Tensor > >( viewKeyStruct::contactForceString );
+  fc = {0, 0, 0};
+
+  arrayView1d< R1Tensor const > const & faceNormal = faceManager->faceNormal();
+  ArrayOfArraysView< localIndex const > const & facesToNodes = faceManager->nodeList().toViewConst();
+
+  string const dofKey = dofManager.getKey( keys::TotalDisplacement );
+  arrayView1d< globalIndex const > const & nodeDofNumber = nodeManager->getReference< globalIndex_array >( dofKey );
+
+  // TODO: this bound may need to change
+  constexpr localIndex maxNodexPerFace = 4;
+  constexpr localIndex maxDofPerElem = maxNodexPerFace * 3 * 2;
+
+  elemManager->forElementSubRegions< FaceElementSubRegion >( [&]( FaceElementSubRegion & subRegion )
+  {
+    arrayView1d< integer const > const & ghostRank = subRegion.ghostRank();
+    arrayView1d< real64 const > const & faceArea = subRegion.getElementArea();
+    arrayView2d< localIndex const > const & elemsToFaces = subRegion.faceList();
+
+    forAll< serialPolicy >( subRegion.size(), [=] ( localIndex const kfe )
+    {
+
+      if( ghostRank[kfe] < 0 )
+      {
+        R1Tensor Nbar = faceNormal[elemsToFaces[kfe][0]];
+        Nbar -= faceNormal[elemsToFaces[kfe][1]];
+        Nbar.Normalize();
+
+        localIndex const kf0 = elemsToFaces[kfe][0];
+        localIndex const kf1 = elemsToFaces[kfe][1];
+        localIndex const numNodesPerFace=facesToNodes.sizeOfArray( kf0 );
+        real64 const Ja = faceArea[kfe] / numNodesPerFace;
+
+        stackArray1d< globalIndex, maxDofPerElem > rowDOF( numNodesPerFace*3*2 );
+        stackArray1d< real64, maxDofPerElem > nodeRHS( numNodesPerFace*3*2 );
+        stackArray2d< real64, maxDofPerElem *maxDofPerElem > dRdP( numNodesPerFace*3*2, numNodesPerFace*3*2 );
+
+        for( localIndex a=0; a<numNodesPerFace; ++a )
+        {
+          R1Tensor penaltyForce = Nbar;
+          localIndex const node0 = facesToNodes[kf0][a];
+          localIndex const node1 = facesToNodes[kf1][ a==0 ? a : numNodesPerFace-a ];
+          R1Tensor gap = u[node1];
+          gap -= u[node0];
+          real64 const gapNormal = Dot( gap, Nbar );
+
+          for( int i=0; i<3; ++i )
+          {
+            rowDOF[3*a+i]                     = nodeDofNumber[node0]+i;
+            rowDOF[3*(numNodesPerFace + a)+i] = nodeDofNumber[node1]+i;
+          }
+
+          if( gapNormal < 0 )
+          {
+            penaltyForce *= -contactStiffness * gapNormal * Ja;
+            for( int i=0; i<3; ++i )
+            {
+              fc[node0] -= penaltyForce;
+              fc[node1] += penaltyForce;
+              nodeRHS[3*a+i]                     -= penaltyForce[i];
+              nodeRHS[3*(numNodesPerFace + a)+i] += penaltyForce[i];
+
+              dRdP( 3*a+i, 3*a+i )                                         -= contactStiffness * Ja * Nbar[i] * Nbar[i];
+              dRdP( 3*a+i, 3*(numNodesPerFace + a)+i )                     += contactStiffness * Ja * Nbar[i] * Nbar[i];
+              dRdP( 3*(numNodesPerFace + a)+i, 3*a+i )                     += contactStiffness * Ja * Nbar[i] * Nbar[i];
+              dRdP( 3*(numNodesPerFace + a)+i, 3*(numNodesPerFace + a)+i ) -= contactStiffness * Ja * Nbar[i] * Nbar[i];
+            }
+          }
+        }
+
+        rhs->add( rowDOF, nodeRHS );
+        matrix->add( rowDOF, rowDOF, dRdP );
+      }
+    } );
   } );
 }
 
@@ -416,6 +610,42 @@ struct ImplicitKernel
     return 0;
   }
 
+};
+
+struct CRSImplicitKernel
+{
+  template< localIndex NUM_NODES_PER_ELEM, localIndex NUM_QUADRATURE_POINTS, typename CONSTITUTIVE_TYPE >
+  static inline real64
+  Launch( CONSTITUTIVE_TYPE * const GEOSX_UNUSED_PARAM( constitutiveRelation ),
+          localIndex const GEOSX_UNUSED_PARAM( numElems ),
+          real64 const GEOSX_UNUSED_PARAM( dt ),
+          arrayView3d< R1Tensor const > const & GEOSX_UNUSED_PARAM( dNdX ),
+          arrayView2d< real64 const > const & GEOSX_UNUSED_PARAM( detJ ),
+          FiniteElementBase const * const GEOSX_UNUSED_PARAM( fe ),
+          arrayView1d< integer const > const & GEOSX_UNUSED_PARAM( elemGhostRank ),
+          arrayView2d< localIndex const, cells::NODE_MAP_USD > const & GEOSX_UNUSED_PARAM( elemsToNodes ),
+          arrayView1d< globalIndex const > const & GEOSX_UNUSED_PARAM( globalDofNumber ),
+          arrayView2d< real64 const, nodes::TOTAL_DISPLACEMENT_USD > const & GEOSX_UNUSED_PARAM( disp ),
+          arrayView2d< real64 const, nodes::INCR_DISPLACEMENT_USD > const & GEOSX_UNUSED_PARAM( uhat ),
+          arrayView1d< R1Tensor const > const & GEOSX_UNUSED_PARAM( vtilde ),
+          arrayView1d< R1Tensor const > const & GEOSX_UNUSED_PARAM( uhattilde ),
+          arrayView2d< real64 const > const & GEOSX_UNUSED_PARAM( density ),
+          arrayView1d< real64 const > const & GEOSX_UNUSED_PARAM( fluidPressure ),
+          arrayView1d< real64 const > const & GEOSX_UNUSED_PARAM( deltaFluidPressure ),
+          real64 const GEOSX_UNUSED_PARAM( biotCoefficient ),
+          TimeIntegrationOption const GEOSX_UNUSED_PARAM( tiOption ),
+          real64 const GEOSX_UNUSED_PARAM( stiffnessDamping ),
+          real64 const GEOSX_UNUSED_PARAM( massDamping ),
+          real64 const GEOSX_UNUSED_PARAM( newmarkBeta ),
+          real64 const GEOSX_UNUSED_PARAM( newmarkGamma ),
+          R1Tensor const & GEOSX_UNUSED_PARAM( gravityVector ),
+          DofManager const * const GEOSX_UNUSED_PARAM( dofManager ),
+          LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & GEOSX_UNUSED_PARAM( matrix ),
+          arrayView1d< real64 > const & GEOSX_UNUSED_PARAM( rhs ) )
+  {
+    GEOSX_ERROR( "SolidMechanicsLagrangianFEM::CRSImplicitKernel::Launch() not implemented" );
+    return 0;
+  }
 };
 
 } // namespace SolidMechanicsLagrangianFEMKernels

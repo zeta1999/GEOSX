@@ -695,7 +695,6 @@ protected:
 
   /**
    * @brief Returns a copy of the data in row <tt>globalRow</tt>.
-   * Note that the input arrays will be resized internally to fit the number of entries.
    */
   virtual void getRowCopy( globalIndex globalRow,
                            arraySlice1d< globalIndex > const & colIndices,
