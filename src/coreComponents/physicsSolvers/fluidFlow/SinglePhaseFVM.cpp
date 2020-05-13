@@ -360,13 +360,13 @@ SinglePhaseFVM< BASE >::ApplyBoundaryConditions( real64 const time_n,
     }
 
     fs->ApplyBoundaryConditionToSystem< FieldSpecificationAdd, LAInterface >( localSet.toViewConst(),
-      time_n + dt,
-      dt,
-      subRegion,
-      dofNumber,
-      1,
-      matrix,
-      rhs,
+                                                                              time_n + dt,
+                                                                              dt,
+                                                                              subRegion,
+                                                                              dofNumber,
+                                                                              1,
+                                                                              matrix,
+                                                                              rhs,
                                                                               [&]( localIndex const GEOSX_UNUSED_PARAM( a ) )
     {
       return 0;

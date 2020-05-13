@@ -83,7 +83,7 @@ sparsityGeneration( LvArray::CRSMatrix< real64, globalIndex, localIndex > & matr
 
     std::vector< localIndex > nnzPerRow( NDIM * numNodes );
     forAll< parallelHostPolicy >( numNodes,
-    [&nnzPerRow, elemsToNodes, nodesToRegions, nodesToSubRegions, nodesToElems] ( localIndex const nodeID )
+                                  [&nnzPerRow, elemsToNodes, nodesToRegions, nodesToSubRegions, nodesToElems] ( localIndex const nodeID )
     {
       localIndex neighborNodes[ MAX_ELEMS_PER_NODE * MAX_NODES_PER_ELEM ];
       localIndex const numNeighbors = getNeighborNodes( neighborNodes,
@@ -95,7 +95,9 @@ sparsityGeneration( LvArray::CRSMatrix< real64, globalIndex, localIndex > & matr
       GEOSX_ASSERT_GE( MAX_NODE_NEIGHBORS, numNeighbors );
 
       for( int dim = 0; dim < NDIM; ++dim )
-      { nnzPerRow[ NDIM * nodeID + dim ] = NDIM * numNeighbors; }
+      {
+        nnzPerRow[ NDIM * nodeID + dim ] = NDIM * numNeighbors;
+      }
     } );
 
     sparsity.resizeFromRowCapacities< parallelHostPolicy >( NDIM * numNodes, NDIM * numNodes, nnzPerRow.data() );
@@ -106,7 +108,7 @@ sparsityGeneration( LvArray::CRSMatrix< real64, globalIndex, localIndex > & matr
 
     LvArray::SparsityPatternView< globalIndex, localIndex const > sparsityView = sparsity.toView();
     forAll< parallelHostPolicy >( numNodes,
-    [sparsityView, elemsToNodes, nodesToRegions, nodesToSubRegions, nodesToElems] ( localIndex const nodeID )
+                                  [sparsityView, elemsToNodes, nodesToRegions, nodesToSubRegions, nodesToElems] ( localIndex const nodeID )
     {
       localIndex neighborNodes[ MAX_ELEMS_PER_NODE * MAX_NODES_PER_ELEM ];
       localIndex const numNeighbors = getNeighborNodes( neighborNodes,
@@ -119,7 +121,9 @@ sparsityGeneration( LvArray::CRSMatrix< real64, globalIndex, localIndex > & matr
       for( localIndex i = 0; i < numNeighbors; ++i )
       {
         for( int dim = 0; dim < NDIM; ++dim )
-        { dofNumbers[ NDIM * i + dim ] = NDIM * neighborNodes[ i ] + dim; }
+        {
+          dofNumbers[ NDIM * i + dim ] = NDIM * neighborNodes[ i ] + dim;
+        }
       }
 
       for( int dim = 0; dim < NDIM; ++dim )
@@ -187,101 +191,6 @@ inline void displacementUpdate( arrayView2d< real64 const, nodes::VELOCITY_USD >
     }
   } );
 }
-
-
-void CRSApplyContactConstraint( DofManager const & dofManager,
-                                DomainPartition & domain,
-                                LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
-                                arrayView1d< real64 > const & rhs,
-                                ContactRelationBase const & contactRelation )
-{
-  GEOSX_MARK_FUNCTION;
-
-  MeshLevel * const mesh = domain.getMeshBodies()->GetGroup< MeshBody >( 0 )->getMeshLevel( 0 );
-  FaceManager const * const faceManager = mesh->getFaceManager();
-  NodeManager const & nodeManager = *mesh->getNodeManager();
-  ElementRegionManager * const elemManager = mesh->getElemManager();
-
-  real64 const contactStiffness = contactRelation.stiffness();
-
-  arrayView2d< real64 const, nodes::TOTAL_DISPLACEMENT_USD > const & u = nodeManager->totalDisplacement();
-  arrayView1d< R1Tensor > const & fc = nodeManager->getReference< array1d< R1Tensor > >( viewKeyStruct::contactForceString );
-  fc = {0, 0, 0};
-
-  arrayView1d< R1Tensor const > const & faceNormal = faceManager->faceNormal();
-  ArrayOfArraysView< localIndex const > const & facesToNodes = faceManager->nodeList().toViewConst();
-
-  string const dofKey = dofManager.getKey( keys::TotalDisplacement );
-  arrayView1d< globalIndex const > const & nodeDofNumber = nodeManager->getReference< globalIndex_array >( dofKey );
-
-  // TODO: this bound may need to change
-  constexpr localIndex maxNodexPerFace = 4;
-  constexpr localIndex maxDofPerElem = maxNodexPerFace * 3 * 2;
-
-  elemManager->forElementSubRegions< FaceElementSubRegion >( [&]( FaceElementSubRegion & subRegion )
-  {
-    arrayView1d< integer const > const & ghostRank = subRegion.ghostRank();
-    arrayView1d< real64 const > const & faceArea = subRegion.getElementArea();
-    arrayView2d< localIndex const > const & elemsToFaces = subRegion.faceList();
-
-    forAll< serialPolicy >( subRegion.size(), [=] ( localIndex const kfe )
-    {
-
-      if( ghostRank[kfe] < 0 )
-      {
-        R1Tensor Nbar = faceNormal[elemsToFaces[kfe][0]];
-        Nbar -= faceNormal[elemsToFaces[kfe][1]];
-        Nbar.Normalize();
-
-        localIndex const kf0 = elemsToFaces[kfe][0];
-        localIndex const kf1 = elemsToFaces[kfe][1];
-        localIndex const numNodesPerFace=facesToNodes.sizeOfArray( kf0 );
-        real64 const Ja = faceArea[kfe] / numNodesPerFace;
-
-        stackArray1d< globalIndex, maxDofPerElem > rowDOF( numNodesPerFace*3*2 );
-        stackArray1d< real64, maxDofPerElem > nodeRHS( numNodesPerFace*3*2 );
-        stackArray2d< real64, maxDofPerElem *maxDofPerElem > dRdP( numNodesPerFace*3*2, numNodesPerFace*3*2 );
-
-        for( localIndex a=0; a<numNodesPerFace; ++a )
-        {
-          R1Tensor penaltyForce = Nbar;
-          localIndex const node0 = facesToNodes[kf0][a];
-          localIndex const node1 = facesToNodes[kf1][ a==0 ? a : numNodesPerFace-a ];
-          R1Tensor gap = u[node1];
-          gap -= u[node0];
-          real64 const gapNormal = Dot( gap, Nbar );
-
-          for( int i=0; i<3; ++i )
-          {
-            rowDOF[3*a+i]                     = nodeDofNumber[node0]+i;
-            rowDOF[3*(numNodesPerFace + a)+i] = nodeDofNumber[node1]+i;
-          }
-
-          if( gapNormal < 0 )
-          {
-            penaltyForce *= -contactStiffness * gapNormal * Ja;
-            for( int i=0; i<3; ++i )
-            {
-              fc[node0] -= penaltyForce;
-              fc[node1] += penaltyForce;
-              nodeRHS[3*a+i]                     -= penaltyForce[i];
-              nodeRHS[3*(numNodesPerFace + a)+i] += penaltyForce[i];
-
-              dRdP( 3*a+i, 3*a+i )                                         -= contactStiffness * Ja * Nbar[i] * Nbar[i];
-              dRdP( 3*a+i, 3*(numNodesPerFace + a)+i )                     += contactStiffness * Ja * Nbar[i] * Nbar[i];
-              dRdP( 3*(numNodesPerFace + a)+i, 3*a+i )                     += contactStiffness * Ja * Nbar[i] * Nbar[i];
-              dRdP( 3*(numNodesPerFace + a)+i, 3*(numNodesPerFace + a)+i ) -= contactStiffness * Ja * Nbar[i] * Nbar[i];
-            }
-          }
-        }
-
-        rhs->add( rowDOF, nodeRHS );
-        matrix->add( rowDOF, rowDOF, dRdP );
-      }
-    } );
-  } );
-}
-
 
 
 /**

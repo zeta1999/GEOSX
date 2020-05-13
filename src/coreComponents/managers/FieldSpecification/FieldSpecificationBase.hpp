@@ -258,8 +258,8 @@ public:
 
   template< typename POLICY >
   void ZeroSystemRowsForBoundaryCondition( SortedArrayView< localIndex const > const & targetSet,
-                                          arrayView1d< globalIndex const > const & dofMap,
-                                          LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix ) const;
+                                           arrayView1d< globalIndex const > const & dofMap,
+                                           LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix ) const;
 
   struct viewKeyStruct
   {
@@ -827,14 +827,14 @@ FieldSpecificationBase::
   if( functionName.empty() || functionManager.getGroupReference< FunctionBase >( functionName ).isFunctionOfTime() == 2 )
   {
     real64 value = m_scale * dt * sizeScalingFactor;
-    if ( !functionName.empty() )
+    if( !functionName.empty() )
     {
       FunctionBase const & function = functionManager.getGroupReference< FunctionBase >( functionName );
       value *= function.Evaluate( &time );
     }
 
     forAll< POLICY >( targetSet.size(),
-      [targetSet, dof, dofMap, component, matrix, rhsContribution, value, lambda] GEOSX_HOST_DEVICE ( localIndex const i )
+                      [targetSet, dof, dofMap, component, matrix, rhsContribution, value, lambda] GEOSX_HOST_DEVICE ( localIndex const i )
     {
       localIndex const a = targetSet[ i ];
       dof[ i ] = dofMap[ a ] + component;
@@ -855,7 +855,7 @@ FieldSpecificationBase::
     real64 const value = m_scale * dt * sizeScalingFactor;
 
     forAll< POLICY >( targetSet.size(),
-      [targetSet, dof, dofMap, component, matrix, rhsContribution, results, value, lambda] GEOSX_HOST_DEVICE ( localIndex const i )
+                      [targetSet, dof, dofMap, component, matrix, rhsContribution, results, value, lambda] GEOSX_HOST_DEVICE ( localIndex const i )
     {
       localIndex const a = targetSet[ i ];
       dof[ i ] = dofMap[ a ] + component;
@@ -881,12 +881,14 @@ void FieldSpecificationBase::ZeroSystemRowsForBoundaryCondition( SortedArrayView
   {
     localIndex const a = targetSet[ i ];
     globalIndex const dof = dofMap[ a ] + component;
-    
+
     arraySlice1d< real64 > const entries = matrix.getEntries( dof );
     localIndex const numEntries = matrix.numNonZeros( dof );
 
-    for ( localIndex j = 0; j < numEntries; ++j )
-    { entries[ j ] = 0; }
+    for( localIndex j = 0; j < numEntries; ++j )
+    {
+      entries[ j ] = 0;
+    }
   } );
 }
 

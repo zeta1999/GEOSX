@@ -318,7 +318,7 @@ struct ImplicitKernel
           ParallelMatrix * const matrix,
           ParallelVector * const rhs )
   {
-    GEOSX_MARK_FUNCTION_TAG(Normal);
+    GEOSX_MARK_FUNCTION_TAG( Normal );
     constexpr int dim = 3;
 
     // if the following is not static, then gcc8.1 gives a "error: use of 'this' in a constant expression"
@@ -586,7 +586,7 @@ struct CRSImplicitKernel
 
     RAJA::ReduceMax< parallelDeviceReduce, double > maxForce( 0 );
     RAJA::forall< parallelDevicePolicy< 32 > >( RAJA::TypedRangeSegment< localIndex >( 0, numElems ),
-      [=] GEOSX_DEVICE ( localIndex const k )
+                                                [=] GEOSX_DEVICE ( localIndex const k )
     {
       globalIndex elementLocalDofIndex[ ndof ];
       real64 R[ ndof ] = { 0 };
@@ -713,9 +713,9 @@ struct CRSImplicitKernel
           {
             globalIndex const dof = elementLocalDofIndex[ NDIM * localNode + dim ];
             matrix.addToRowBinarySearchUnsorted< parallelDeviceAtomic >( dof,
-                                                                       elementLocalDofIndex,
-                                                                       dRdU[ NDIM * localNode + dim ],
-                                                                       NUM_NODES_PER_ELEM * NDIM );
+                                                                         elementLocalDofIndex,
+                                                                         dRdU[ NDIM * localNode + dim ],
+                                                                         NUM_NODES_PER_ELEM * NDIM );
 
             RAJA::atomicAdd< parallelDeviceAtomic >( &rhs[ dof ], R[ NDIM * localNode + dim ] );
           }

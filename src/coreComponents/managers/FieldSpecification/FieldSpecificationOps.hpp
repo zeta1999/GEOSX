@@ -395,24 +395,24 @@ struct FieldSpecificationEqual : public FieldSpecificationOp< OpEqual >
   {
     // if( matrix.getLocalRowID( dof ) >= 0 )
     // {
-      arraySlice1d< globalIndex const > const columns = matrix.getColumns( dof );
-      arraySlice1d< real64 > const entries = matrix.getEntries( dof );
-      localIndex const numEntries = matrix.numNonZeros( dof );
+    arraySlice1d< globalIndex const > const columns = matrix.getColumns( dof );
+    arraySlice1d< real64 > const entries = matrix.getEntries( dof );
+    localIndex const numEntries = matrix.numNonZeros( dof );
 
-      real64 diagonal = 0;
-      for ( localIndex j = 0; j < numEntries; ++j )
-      {
-        if ( columns[ j ] == dof )
-        { diagonal = entries[ j ]; }
-        else
-        { entries[ j ] = 0; }
-      }
+    real64 diagonal = 0;
+    for( localIndex j = 0; j < numEntries; ++j )
+    {
+      if( columns[ j ] == dof )
+      { diagonal = entries[ j ]; }
+      else
+      { entries[ j ] = 0; }
+    }
 
-      rhs = -diagonal * (bcValue - fieldValue);
+    rhs = -diagonal * (bcValue - fieldValue);
     // }
     // else
     // {
-      // rhs = 0.0;
+    // rhs = 0.0;
     // }
   }
 
@@ -448,7 +448,7 @@ struct FieldSpecificationEqual : public FieldSpecificationOp< OpEqual >
     {
       // if( rhs.getLocalRowID( dof[a] ) >= 0 )
       // {
-        rhs[ dof[ a ] ] = values[ a ];
+      rhs[ dof[ a ] ] = values[ a ];
       // }
     } );
   }
@@ -528,7 +528,7 @@ struct FieldSpecificationAdd : public FieldSpecificationOp< OpAdd >
     {
       // if( rhs.getLocalRowID( dof[a] ) >= 0 )
       // {
-        rhs[ dof[ a ] ] += values[ a ];
+      rhs[ dof[ a ] ] += values[ a ];
       // }
     } );
   }

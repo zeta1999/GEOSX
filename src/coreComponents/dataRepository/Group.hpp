@@ -1567,7 +1567,7 @@ Wrapper< TBASE > * Group::registerWrapper( std::string const & name,
 /// @endcond
 
 template< typename T, typename TBASE >
-Wrapper< TBASE > * Group::registerWrapper( ViewKey & viewKey )
+Wrapper< TBASE > * Group::registerWrapper( ViewKey const & viewKey )
 {
   ViewKey::index_type index;
   Wrapper< TBASE > * const rval = registerWrapper< T, TBASE >( viewKey.Key(), &index );
