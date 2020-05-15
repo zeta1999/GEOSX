@@ -76,6 +76,8 @@ public:
    * the correct dimension
    */
   R1TensorT( realT x, realT y );  //2D only
+
+  GEOSX_HOST_DEVICE
   R1TensorT( realT x, realT y, realT z ); //3D only
 
   //***** ASSIGNMENT OPERATORS *************************************************

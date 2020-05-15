@@ -310,6 +310,7 @@ public:
                           arrayView1d< integer const > const & elemGhostRank,
                           arrayView2d< localIndex const, cells::NODE_MAP_USD > const & elemsToNodes,
                           arrayView1d< globalIndex const > const & globalDofNumber,
+                          arrayView2d< real64 const, nodes::REFERENCE_POSITION_USD > const & X,
                           arrayView2d< real64 const, nodes::TOTAL_DISPLACEMENT_USD > const & disp,
                           arrayView2d< real64 const, nodes::INCR_DISPLACEMENT_USD > const & uhat,
                           arrayView1d< R1Tensor const > const & vtilde,
@@ -342,6 +343,7 @@ public:
                                                             elemGhostRank,
                                                             elemsToNodes,
                                                             globalDofNumber,
+                                                            X,
                                                             disp,
                                                             uhat,
                                                             vtilde,
@@ -467,9 +469,6 @@ protected:
   SortedArray< localIndex > m_sendOrReceiveNodes;
   SortedArray< localIndex > m_nonSendOrReceiveNodes;
   MPI_iCommData m_iComm;
-
-  LvArray::CRSMatrix< real64, globalIndex, localIndex > m_crsMatrix;
-  array1d< real64 > m_rhsArray;
 
   SolidMechanicsLagrangianFEM();
 

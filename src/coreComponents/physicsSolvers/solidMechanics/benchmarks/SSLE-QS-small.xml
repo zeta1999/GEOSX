@@ -28,7 +28,7 @@
                   cellBlockNames="{cb1}"/>
   </Mesh>
 
-  <Events maxTime="1.0">
+  <Events maxTime="3.0">
     <PeriodicEvent name="solverApplications"
                    forceDt="1.0"
                    target="/Solvers/lagsolve" />
