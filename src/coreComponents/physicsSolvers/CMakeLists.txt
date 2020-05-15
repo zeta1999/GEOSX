@@ -33,6 +33,7 @@ set( physicsSolvers_headers
      multiphysics/SinglePhaseReservoir.hpp
      multiphysics/CompositionalMultiphaseReservoir.hpp
      simplePDE/LaplaceFEM.hpp
+     simplePDE/LaplaceFEMKernels.hpp
      solidMechanics/SolidMechanicsLagrangianFEM.hpp
      solidMechanics/SolidMechanicsLagrangianSSLE.hpp
      solidMechanics/SolidMechanicsLagrangianFEMKernels.hpp

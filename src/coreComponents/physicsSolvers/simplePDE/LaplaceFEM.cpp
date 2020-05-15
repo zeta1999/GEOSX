@@ -17,16 +17,13 @@
  *
  */
 
+// Source includes
 #include "LaplaceFEM.hpp"
-
-#include <vector>
-#include <math.h>
-
+#include "LaplaceFEMKernels.hpp"
 #include "mpiCommunications/CommunicationTools.hpp"
 #include "mpiCommunications/NeighborCommunicator.hpp"
 #include "dataRepository/Group.hpp"
 #include "common/TimingMacros.hpp"
-
 #include "common/DataTypes.hpp"
 #include "constitutive/ConstitutiveManager.hpp"
 #include "finiteElement/FiniteElementDiscretizationManager.hpp"
@@ -34,7 +31,6 @@
 #include "finiteElement/Kinematics.h"
 #include "managers/NumericalMethodsManager.hpp"
 #include "codingUtilities/Utilities.hpp"
-
 #include "managers/DomainPartition.hpp"
 
 namespace geosx
@@ -149,6 +145,38 @@ real64 LaplaceFEM::ExplicitStep( real64 const & GEOSX_UNUSED_PARAM( time_n ),
   return dt;
 }
 
+void LaplaceFEM::sparsityGeneration( DomainPartition const & domain )
+{
+  GEOSX_MARK_FUNCTION;
+
+  MeshLevel const & meshLevel = *( domain.getMeshBody( 0 )->getMeshLevel( 0 ) );
+  NodeManager const & nodeManager = *meshLevel.getNodeManager();
+  ElementRegionManager const & elementRegionManager = *meshLevel.getElemManager();
+  array1d< array1d< arrayView2d< localIndex const, cells::NODE_MAP_USD > > > elemsToNodes( elementRegionManager.numRegions() );
+
+  forTargetRegionsComplete< CellElementRegion >( meshLevel,
+                                                 [&] ( localIndex, localIndex const er, CellElementRegion const & region )
+  {
+    elemsToNodes[ er ].resize( region.numSubRegions() );
+
+    region.forElementSubRegionsIndex< CellElementSubRegion >(
+      [&] ( localIndex const esr, CellElementSubRegion const & subRegion )
+    {
+      elemsToNodes[ er ][ esr ] = subRegion.nodeList().toViewConst();
+    } );
+  } );
+
+  sparsityGeneration::finiteElement< 1 >( m_crsMatrix,
+                                          elemsToNodes.toViewConst(),
+                                          nodeManager.elementRegionList(),
+                                          nodeManager.elementSubRegionList(),
+                                          nodeManager.elementList() );
+
+  m_rhsArray.resize( m_crsMatrix.numRows() );
+
+  verifySystem( m_crsMatrix.toViewConst(), m_rhsArray.toViewConst(), m_matrix, m_rhs, false, 1e-10, 1e-10 );
+}
+
 void LaplaceFEM::ImplicitStepSetup( real64 const & GEOSX_UNUSED_PARAM( time_n ),
                                     real64 const & GEOSX_UNUSED_PARAM( dt ),
                                     DomainPartition * const domain,
@@ -159,6 +187,7 @@ void LaplaceFEM::ImplicitStepSetup( real64 const & GEOSX_UNUSED_PARAM( time_n ),
 {
   // Computation of the sparsity pattern
   SetupSystem( domain, dofManager, matrix, rhs, solution );
+  sparsityGeneration( *domain );
 }
 
 void LaplaceFEM::ImplicitStepComplete( real64 const & GEOSX_UNUSED_PARAM( time_n ),
@@ -185,6 +214,10 @@ void LaplaceFEM::AssembleSystem( real64 const time_n,
                                  ParallelMatrix & matrix,
                                  ParallelVector & rhs )
 {
+  m_crsMatrix.setValues< parallelHostPolicy >( 0 );
+  m_rhsArray.setValues< parallelHostPolicy >( 0 );
+  verifySystem( m_crsMatrix.toViewConst(), m_rhsArray.toViewConst(), m_matrix, m_rhs, true, 1e-10, 1e-10 );
+
   MeshLevel * const mesh = domain->getMeshBodies()->GetGroup< MeshBody >( 0 )->getMeshLevel( 0 );
   Group * const nodeManager = mesh->getNodeManager();
   ElementRegionManager * const elemManager = mesh->getElemManager();
@@ -219,15 +252,24 @@ void LaplaceFEM::AssembleSystem( real64 const time_n,
       localIndex const numNodesPerElement = elementSubRegion.numNodesPerElement();
       arrayView2d< localIndex const, cells::NODE_MAP_USD > const & elemNodes = elementSubRegion.nodeList();
 
+      arrayView1d< integer const > const & elemGhostRank = elementSubRegion.ghostRank();
+      localIndex const n_q_points = feDiscretization->m_finiteElement->n_quadrature_points();
+
+      finiteElementLaunchDispatch< LaplaceFEMKernels::ImplicitKernel >( numNodesPerElement,
+                                                                        n_q_points,
+                                                                        dNdX,
+                                                                        detJ,
+                                                                        elemNodes,
+                                                                        elemGhostRank,
+                                                                        dofIndex,
+                                                                        m_crsMatrix.toViewConstSizes() );
+
       globalIndex_array elemDofIndex( numNodesPerElement );
       real64_array element_rhs( numNodesPerElement );
       real64_array2d element_matrix( numNodesPerElement, numNodesPerElement );
 
-      arrayView1d< integer const > const & elemGhostRank = elementSubRegion.ghostRank();
-      localIndex const n_q_points = feDiscretization->m_finiteElement->n_quadrature_points();
-
       // begin element loop, skipping ghost elements
-      for( localIndex k=0; k<elementSubRegion.size(); ++k )
+      forAll< serialPolicy >( elementSubRegion.size(), [=, &elemDofIndex, &element_rhs, &element_matrix, &matrix, &rhs] ( localIndex const k )
       {
         if( elemGhostRank[k] < 0 )
         {
@@ -252,11 +294,13 @@ void LaplaceFEM::AssembleSystem( real64 const time_n,
           matrix.add( elemDofIndex, elemDofIndex, element_matrix );
           rhs.add( elemDofIndex, element_rhs );
         }
-      }
+      } );
     } );
   }
   matrix.close();
   rhs.close();
+
+  verifySystem( m_crsMatrix.toViewConst(), m_rhsArray.toViewConst(), matrix, rhs, true, 1e-10, 1e-10 );
   //END_SPHINX_INCLUDE_04
 
   if( getLogLevel() == 2 )
@@ -313,6 +357,8 @@ void LaplaceFEM::ApplyBoundaryConditions( real64 const time_n,
   ApplyDirichletBC_implicit( time_n + dt, dofManager, *domain, m_matrix, m_rhs );
   matrix.close();
   rhs.close();
+
+  verifySystem( m_crsMatrix.toViewConst(), m_rhsArray.toViewConst(), m_matrix, m_rhs, false, 1e-10, 1e-10 );
 
   if( getLogLevel() == 2 )
   {
@@ -376,6 +422,15 @@ void LaplaceFEM::ApplyDirichletBC_implicit( real64 const time,
                                                                                 1,
                                                                                 matrix,
                                                                                 rhs );
+
+    bc->ApplyBoundaryConditionToSystem< FieldSpecificationEqual, parallelDevicePolicy< 32 > >( targetSet,
+                                                                                               time,
+                                                                                               targetGroup,
+                                                                                               m_fieldName,
+                                                                                               dofManager.getKey( m_fieldName ),
+                                                                                               1,
+                                                                                               m_crsMatrix.toViewConstSizes(),
+                                                                                               m_rhsArray.toView() );
   } );
 }
 //START_SPHINX_INCLUDE_00
