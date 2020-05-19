@@ -218,6 +218,7 @@ public:
                                              real64 const time,
                                              dataRepository::Group const * const dataGroup,
                                              arrayView1d< globalIndex const > const & dofMap,
+                                             globalIndex const dofRankOffset,
                                              integer const dofDim,
                                              LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
                                              arrayView1d< real64 > const & rhs,
@@ -229,6 +230,7 @@ public:
                                        dataRepository::Group const * const dataGroup,
                                        string const & fieldName,
                                        string const & dofMapName,
+                                       globalIndex const dofRankOffset,
                                        integer const dofDim,
                                        LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
                                        arrayView1d< real64 > const & rhs ) const;
@@ -239,6 +241,7 @@ public:
                                   real64 const time,
                                   dataRepository::Group const * const dataGroup,
                                   arrayView1d< globalIndex const > const & dofMap,
+                                  globalIndex const dofRankOffset,
                                   integer const & GEOSX_UNUSED_PARAM( dofDim ),
                                   LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
                                   arrayView1d< real64 > const & rhs,
@@ -251,6 +254,7 @@ public:
                                   real64 const dt,
                                   dataRepository::Group const * const dataGroup,
                                   arrayView1d< globalIndex const > const & dofMap,
+                                  globalIndex const dofRankOffset,
                                   integer const & GEOSX_UNUSED_PARAM( dofDim ),
                                   LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
                                   arrayView1d< real64 > const & rhs,
@@ -730,13 +734,14 @@ void FieldSpecificationBase::ApplyBoundaryConditionToSystemKernel( SortedArrayVi
                                                                    real64 const time,
                                                                    dataRepository::Group const * const dataGroup,
                                                                    arrayView1d< globalIndex const > const & dofMap,
+                                                                   globalIndex const dofRankOffset,
                                                                    integer const dofDim,
                                                                    LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
                                                                    arrayView1d< real64 > const & rhs,
                                                                    ArrayView< T const, NDIM, USD > const & fieldView ) const
 {
   integer const component = GetComponent();
-  this->ApplyBoundaryConditionToSystem< FIELD_OP, POLICY >( targetSet, time, dataGroup, dofMap, dofDim, matrix, rhs,
+  this->ApplyBoundaryConditionToSystem< FIELD_OP, POLICY >( targetSet, time, dataGroup, dofMap, dofRankOffset, dofDim, matrix, rhs,
                                                             [fieldView, component] GEOSX_HOST_DEVICE ( localIndex const a )
   {
     real64 value = 0.0;
@@ -751,6 +756,7 @@ void FieldSpecificationBase::ApplyBoundaryConditionToSystem( SortedArrayView< lo
                                                              dataRepository::Group const * const dataGroup,
                                                              string const & fieldName,
                                                              string const & dofMapName,
+                                                             globalIndex const dofRankOffset,
                                                              integer const dofDim,
                                                              LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
                                                              arrayView1d< real64 > const & rhs ) const
@@ -763,7 +769,7 @@ void FieldSpecificationBase::ApplyBoundaryConditionToSystem( SortedArrayView< lo
   {
     using FieldType = decltype( type );
     dataRepository::Wrapper< FieldType > const & wrapper = dataRepository::Wrapper< FieldType >::cast( wrapperBase );
-    ApplyBoundaryConditionToSystemKernel< FIELD_OP, POLICY >( targetSet, time, dataGroup, dofMap, dofDim, matrix, rhs, wrapper.reference() );
+    ApplyBoundaryConditionToSystemKernel< FIELD_OP, POLICY >( targetSet, time, dataGroup, dofMap, dofRankOffset, dofDim, matrix, rhs, wrapper.reference() );
   } );
 }
 
@@ -774,11 +780,12 @@ FieldSpecificationBase::
                                   real64 const time,
                                   dataRepository::Group const * const dataGroup,
                                   arrayView1d< globalIndex const > const & dofMap,
+                                  globalIndex const dofRankOffset,
                                   integer const & dofDim,
                                   LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
                                   arrayView1d< real64 > const & rhs,
                                   LAMBDA && lambda ) const
-{ return ApplyBoundaryConditionToSystem< FIELD_OP, POLICY >( targetSet, time, 1.0, dataGroup, dofMap, dofDim, matrix, rhs, std::forward< LAMBDA >( lambda ) ); }
+{ return ApplyBoundaryConditionToSystem< FIELD_OP, POLICY >( targetSet, time, 1.0, dataGroup, dofMap, dofRankOffset, dofDim, matrix, rhs, std::forward< LAMBDA >( lambda ) ); }
 
 template< typename FIELD_OP, typename POLICY, typename LAMBDA >
 void
@@ -788,6 +795,7 @@ FieldSpecificationBase::
                                   real64 const dt,
                                   dataRepository::Group const * const dataGroup,
                                   arrayView1d< globalIndex const > const & dofMap,
+                                  globalIndex const dofRankOffset,
                                   integer const & GEOSX_UNUSED_PARAM( dofDim ),
                                   LvArray::CRSMatrixView< real64, globalIndex const, localIndex const > const & matrix,
                                   arrayView1d< real64 > const & rhs,
@@ -834,11 +842,12 @@ FieldSpecificationBase::
     }
 
     forAll< POLICY >( targetSet.size(),
-                      [targetSet, dof, dofMap, component, matrix, rhsContribution, value, lambda] GEOSX_HOST_DEVICE ( localIndex const i )
+                      [targetSet, dof, dofMap, dofRankOffset, component, matrix, rhsContribution, value, lambda] GEOSX_HOST_DEVICE ( localIndex const i )
     {
       localIndex const a = targetSet[ i ];
       dof[ i ] = dofMap[ a ] + component;
       FIELD_OP::SpecifyFieldValue( dof[ i ],
+                                   dofRankOffset,
                                    matrix,
                                    rhsContribution[ i ],
                                    value,
@@ -855,11 +864,12 @@ FieldSpecificationBase::
     real64 const value = m_scale * dt * sizeScalingFactor;
 
     forAll< POLICY >( targetSet.size(),
-                      [targetSet, dof, dofMap, component, matrix, rhsContribution, results, value, lambda] GEOSX_HOST_DEVICE ( localIndex const i )
+                      [targetSet, dof, dofMap, dofRankOffset, component, matrix, rhsContribution, results, value, lambda] GEOSX_HOST_DEVICE ( localIndex const i )
     {
       localIndex const a = targetSet[ i ];
       dof[ i ] = dofMap[ a ] + component;
       FIELD_OP::SpecifyFieldValue( dof[ i ],
+                                   dofRankOffset,
                                    matrix,
                                    rhsContribution[ i ],
                                    value * results[ i ],
@@ -867,7 +877,7 @@ FieldSpecificationBase::
     } );
   }
 
-  FIELD_OP::template PrescribeRhsValues< POLICY >( rhs, dof, rhsContribution );
+  FIELD_OP::template PrescribeRhsValues< POLICY >( rhs, dof, dofRankOffset, rhsContribution );
 }
 
 template< typename POLICY >

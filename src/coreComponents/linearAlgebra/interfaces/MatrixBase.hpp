@@ -861,7 +861,7 @@ void verifySystem( LvArray::CRSMatrixView< real64 const, globalIndex const, loca
 
 
 #if 1
-  using POLICY = parallelHostPolicy;
+  using POLICY = serialPolicy;
 
   GEOSX_ERROR_IF_NE( rhsArray.size(), rhs.localSize() );
 
@@ -878,23 +878,26 @@ void verifySystem( LvArray::CRSMatrixView< real64 const, globalIndex const, loca
   }
 
   GEOSX_ERROR_IF_NE( crsMatrix.numRows(), matrix.numLocalRows() );
-  GEOSX_ERROR_IF_NE( crsMatrix.numColumns(), matrix.numLocalCols() );
+  GEOSX_ERROR_IF_NE( crsMatrix.numColumns(), matrix.numGlobalCols() );
 
   GEOSX_UNUSED_VAR( checkValues );
 
   forAll< POLICY >( crsMatrix.numRows(), [crsMatrix, &matrix, checkValues, atol, rtol] ( localIndex const row )
   {
     localIndex const nnz = matrix.localRowLength( row );
-    GEOSX_ERROR_IF_NE( crsMatrix.numNonZeros( row ), nnz );
+    GEOSX_ERROR_IF_NE_MSG( crsMatrix.numNonZeros( row ), nnz, row );
 
     array1d< globalIndex > columns( nnz );
     array1d< real64 > values( nnz );
 
-    matrix.getRowCopy( row, columns, values );
+    matrix.getRowCopy( matrix.getGlobalRowID( row ), columns, values );
+    GEOSX_ERROR_IF_NE( crsMatrix.numNonZeros( row ), columns.size() );
+
+    LvArray::sortedArrayManipulation::dualSort( columns.begin(), columns.end(), values.begin() );
 
     for( localIndex i = 0; i < nnz; ++i )
     {
-      GEOSX_ERROR_IF_NE( crsMatrix.getColumns( row )[ i ], columns[ i ] );
+      GEOSX_ERROR_IF_NE_MSG( crsMatrix.getColumns( row )[ i ], columns[ i ], "Row = " << row << ", i = " << i );
 
       if( checkValues )
       {

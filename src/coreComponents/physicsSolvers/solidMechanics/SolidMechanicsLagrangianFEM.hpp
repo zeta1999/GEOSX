@@ -310,6 +310,7 @@ public:
                           arrayView1d< integer const > const & elemGhostRank,
                           arrayView2d< localIndex const, cells::NODE_MAP_USD > const & elemsToNodes,
                           arrayView1d< globalIndex const > const & globalDofNumber,
+                          globalIndex const dofRankOffset,
                           arrayView2d< real64 const, nodes::REFERENCE_POSITION_USD > const & X,
                           arrayView2d< real64 const, nodes::TOTAL_DISPLACEMENT_USD > const & disp,
                           arrayView2d< real64 const, nodes::INCR_DISPLACEMENT_USD > const & uhat,
@@ -343,6 +344,7 @@ public:
                                                             elemGhostRank,
                                                             elemsToNodes,
                                                             globalDofNumber,
+                                                            dofRankOffset,
                                                             X,
                                                             disp,
                                                             uhat,
@@ -444,7 +446,7 @@ public:
 
   arrayView1d< string const > const & solidMaterialNames() const { return m_solidMaterialNames; }
 
-  void sparsityGeneration( DomainPartition const & domain );
+  void sparsityGeneration( DomainPartition const & domain, DofManager const & dofManager );
 
 protected:
   virtual void PostProcessInput() override final;

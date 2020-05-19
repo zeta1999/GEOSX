@@ -145,34 +145,22 @@ real64 LaplaceFEM::ExplicitStep( real64 const & GEOSX_UNUSED_PARAM( time_n ),
   return dt;
 }
 
-void LaplaceFEM::sparsityGeneration( DomainPartition const & domain )
+void LaplaceFEM::sparsityGeneration( DomainPartition const & domain, DofManager const & dofManager )
 {
   GEOSX_MARK_FUNCTION;
 
   MeshLevel const & meshLevel = *( domain.getMeshBody( 0 )->getMeshLevel( 0 ) );
   NodeManager const & nodeManager = *meshLevel.getNodeManager();
   ElementRegionManager const & elementRegionManager = *meshLevel.getElemManager();
-  array1d< array1d< arrayView2d< localIndex const, cells::NODE_MAP_USD > > > elemsToNodes( elementRegionManager.numRegions() );
 
-  forTargetRegionsComplete< CellElementRegion >( meshLevel,
-                                                 [&] ( localIndex, localIndex const er, CellElementRegion const & region )
-  {
-    elemsToNodes[ er ].resize( region.numSubRegions() );
-
-    region.forElementSubRegionsIndex< CellElementSubRegion >(
-      [&] ( localIndex const esr, CellElementSubRegion const & subRegion )
-    {
-      elemsToNodes[ er ][ esr ] = subRegion.nodeList().toViewConst();
-    } );
-  } );
-
-  sparsityGeneration::finiteElement< 1 >( m_crsMatrix,
-                                          elemsToNodes.toViewConst(),
-                                          nodeManager.elementRegionList(),
-                                          nodeManager.elementSubRegionList(),
-                                          nodeManager.elementList() );
+  dofManager.setFiniteElementSparsityPattern< 1 >( m_crsMatrix,
+                                                   elementRegionManager,
+                                                   nodeManager,
+                                                   targetRegionNames(),
+                                                   m_fieldName );
 
   m_rhsArray.resize( m_crsMatrix.numRows() );
+  m_rhsArray = 0;
 
   verifySystem( m_crsMatrix.toViewConst(), m_rhsArray.toViewConst(), m_matrix, m_rhs, false, 1e-10, 1e-10 );
 }
@@ -187,7 +175,7 @@ void LaplaceFEM::ImplicitStepSetup( real64 const & GEOSX_UNUSED_PARAM( time_n ),
 {
   // Computation of the sparsity pattern
   SetupSystem( domain, dofManager, matrix, rhs, solution );
-  sparsityGeneration( *domain );
+  sparsityGeneration( *domain, dofManager );
 }
 
 void LaplaceFEM::ImplicitStepComplete( real64 const & GEOSX_UNUSED_PARAM( time_n ),
@@ -214,8 +202,8 @@ void LaplaceFEM::AssembleSystem( real64 const time_n,
                                  ParallelMatrix & matrix,
                                  ParallelVector & rhs )
 {
-  m_crsMatrix.setValues< parallelHostPolicy >( 0 );
-  m_rhsArray.setValues< parallelHostPolicy >( 0 );
+  m_crsMatrix.setValues< parallelDevicePolicy< 32 > >( 0 );
+  m_rhsArray.setValues< parallelDevicePolicy< 32 > >( 0 );
   verifySystem( m_crsMatrix.toViewConst(), m_rhsArray.toViewConst(), m_matrix, m_rhs, true, 1e-10, 1e-10 );
 
   MeshLevel * const mesh = domain->getMeshBodies()->GetGroup< MeshBody >( 0 )->getMeshLevel( 0 );
@@ -227,7 +215,7 @@ void LaplaceFEM::AssembleSystem( real64 const time_n,
     feDiscretizationManager = numericalMethodManager->
                                 GetGroup< FiniteElementDiscretizationManager >( keys::finiteElementDiscretizations );
 
-  array1d< globalIndex > const & dofIndex =
+  arrayView1d< globalIndex const > const & dofIndex =
     nodeManager->getReference< array1d< globalIndex > >( dofManager.getKey( m_fieldName ) );
 
   matrix.open();
@@ -260,8 +248,8 @@ void LaplaceFEM::AssembleSystem( real64 const time_n,
                                                                         dNdX,
                                                                         detJ,
                                                                         elemNodes,
-                                                                        elemGhostRank,
                                                                         dofIndex,
+                                                                        dofManager.rankOffset(),
                                                                         m_crsMatrix.toViewConstSizes() );
 
       globalIndex_array elemDofIndex( numNodesPerElement );
@@ -291,6 +279,7 @@ void LaplaceFEM::AssembleSystem( real64 const time_n,
 
             }
           }
+
           matrix.add( elemDofIndex, elemDofIndex, element_matrix );
           rhs.add( elemDofIndex, element_rhs );
         }
@@ -412,7 +401,7 @@ void LaplaceFEM::ApplyDirichletBC_implicit( real64 const time,
                         string const &,
                         SortedArrayView< localIndex const > const & targetSet,
                         Group * const targetGroup,
-                        string const GEOSX_UNUSED_PARAM( fieldName ) )->void
+                        string const GEOSX_UNUSED_PARAM( fieldName ) )
   {
     bc->ApplyBoundaryConditionToSystem< FieldSpecificationEqual, LAInterface >( targetSet,
                                                                                 time,
@@ -428,6 +417,7 @@ void LaplaceFEM::ApplyDirichletBC_implicit( real64 const time,
                                                                                                targetGroup,
                                                                                                m_fieldName,
                                                                                                dofManager.getKey( m_fieldName ),
+                                                                                               dofManager.rankOffset(),
                                                                                                1,
                                                                                                m_crsMatrix.toViewConstSizes(),
                                                                                                m_rhsArray.toView() );

@@ -557,9 +557,10 @@ struct CRSImplicitKernel
           arrayView3d< R1Tensor const > const & _dNdX,
           arrayView2d< real64 const > const & _detJ,
           FiniteElementBase const * const GEOSX_UNUSED_PARAM( fe ),
-          arrayView1d< integer const > const & elemGhostRank,
+          arrayView1d< integer const > const & GEOSX_UNUSED_PARAM( elemGhostRank ),
           arrayView2d< localIndex const, cells::NODE_MAP_USD > const & elemsToNodes,
           arrayView1d< globalIndex const > const & globalDofNumber,
+          globalIndex const dofRankOffset,
           arrayView2d< real64 const, nodes::REFERENCE_POSITION_USD > const & _X,
           arrayView2d< real64 const, nodes::TOTAL_DISPLACEMENT_USD > const & GEOSX_UNUSED_PARAM( disp ),
           arrayView2d< real64 const, nodes::INCR_DISPLACEMENT_USD > const & uhat,
@@ -616,128 +617,126 @@ struct CRSImplicitKernel
       real64 xLocal[ NUM_NODES_PER_ELEM ][ 3 ];
     #endif
 
-      if( elemGhostRank[k] < 0 )
+      for( localIndex a=0; a<NUM_NODES_PER_ELEM; ++a )
       {
-        for( localIndex a=0; a<NUM_NODES_PER_ELEM; ++a )
+        localIndex const localNodeIndex = elemsToNodes( k, a );
+        for( int i=0; i<NDIM; ++i )
         {
-          localIndex const localNodeIndex = elemsToNodes( k, a );
-          for( int i=0; i<NDIM; ++i )
-          {
-            elementLocalDofIndex[ a * NDIM + i] = globalDofNumber[localNodeIndex]+i;
-          }
+          elementLocalDofIndex[ a * NDIM + i] = globalDofNumber[localNodeIndex]+i;
         }
+      }
 
-        for( localIndex a = 0; a < NUM_NODES_PER_ELEM; ++a )
-        {
-          localIndex const nodeIndex = elemsToNodes( k, a );
-          uhat_local[ a ] = uhat[ nodeIndex ];
-        #if defined(CALCFEMSHAPE)
-          for( int i = 0; i < NDIM; ++i )
-          { xLocal[ a ][ i ] = X[ nodeIndex ][ i ]; }
-        #endif
-        }
+      for( localIndex a = 0; a < NUM_NODES_PER_ELEM; ++a )
+      {
+        localIndex const nodeIndex = elemsToNodes( k, a );
+        uhat_local[ a ] = uhat[ nodeIndex ];
+      #if defined(CALCFEMSHAPE)
+        for( int i = 0; i < NDIM; ++i )
+        { xLocal[ a ][ i ] = X[ nodeIndex ][ i ]; }
+      #endif
+      }
 
-        R1Tensor dNdXa;
-        R1Tensor dNdXb;
+      R1Tensor dNdXa;
+      R1Tensor dNdXb;
 
-        R1Tensor temp;
-        for( int q = 0; q < NUM_QUADRATURE_POINTS; ++q )
-        {
+      R1Tensor temp;
+      for( int q = 0; q < NUM_QUADRATURE_POINTS; ++q )
+      {
 
-        #if defined(CALCFEMSHAPE)
-          real64 dNdX[ 8 ][ 3 ];
-          real64 const detJ_kq = FiniteElementShapeKernel::shapeFunctionDerivatives( q, xLocal, dNdX );
-          #define DNDX dNdX
-          #define DETJ detJ_kq
-        #else //defined(CALCFEMSHAPE)
-          #define DNDX dNdX[k][q]
-          #define DETJ detJ( k, q )
-        #endif //defined(CALCFEMSHAPE)
+      #if defined(CALCFEMSHAPE)
+        real64 dNdX[ 8 ][ 3 ];
+        real64 const detJ_kq = FiniteElementShapeKernel::shapeFunctionDerivatives( q, xLocal, dNdX );
+        #define DNDX dNdX
+        #define DETJ detJ_kq
+      #else //defined(CALCFEMSHAPE)
+        #define DNDX dNdX[k][q]
+        #define DETJ detJ( k, q )
+      #endif //defined(CALCFEMSHAPE)
 
-          R2SymTensor referenceStress = stress[ k ][ q ];
-          if( !fluidPressure.empty() )
-          { referenceStress.PlusIdentity( -biotCoefficient * ( fluidPressure[ k ] + deltaFluidPressure[ k ] ) ); }
+        R2SymTensor referenceStress = stress[ k ][ q ];
+        if( !fluidPressure.empty() )
+        { referenceStress.PlusIdentity( -biotCoefficient * ( fluidPressure[ k ] + deltaFluidPressure[ k ] ) ); }
 
-          R2SymTensor stress0 = referenceStress;
-          stress0 *= DETJ;
+        R2SymTensor stress0 = referenceStress;
+        stress0 *= DETJ;
 
-          for( int a = 0; a < NUM_NODES_PER_ELEM; ++a )
-          {
-            temp.AijBj( stress0, { DNDX[ a ][ 0 ], DNDX[ a ][ 1 ], DNDX[ a ][ 2 ] } );
-            realT maxF = temp.MaxVal();
-            maxForce.max( maxF );
-
-            R[ a * NDIM + 0 ] -= temp[ 0 ];
-            R[ a * NDIM + 1 ] -= temp[ 1 ];
-            R[ a * NDIM + 2 ] -= temp[ 2 ];
-
-            for( int b = 0; b < NUM_NODES_PER_ELEM; ++b )
-            {
-              dRdU[ a * NDIM + 0 ][ b * NDIM + 0 ] -= ( c[ 0 ][ 0 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 0 ] +
-                                                        c[ 5 ][ 5 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 1 ] +
-                                                        c[ 4 ][ 4 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 2 ] ) * DETJ;
-              dRdU[ a * NDIM + 0 ][ b * NDIM + 1 ] -= ( c[ 5 ][ 5 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 0 ] +
-                                                        c[ 0 ][ 1 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 1 ] ) * DETJ;
-              dRdU[ a * NDIM + 0 ][ b * NDIM + 2 ] -= ( c[ 4 ][ 4 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 0 ] +
-                                                        c[ 0 ][ 2 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 2 ] ) * DETJ;
-
-              dRdU[ a * NDIM + 1 ][ b * NDIM + 0 ] -= ( c[ 0 ][ 1 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 0 ] +
-                                                        c[ 5 ][ 5 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 1 ] ) * DETJ;
-              dRdU[ a * NDIM + 1 ][ b * NDIM + 1 ] -= ( c[ 5 ][ 5 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 0 ] +
-                                                        c[ 1 ][ 1 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 1 ] +
-                                                        c[ 3 ][ 3 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 2 ] ) * DETJ;
-              dRdU[ a * NDIM + 1 ][ b * NDIM + 2 ] -= ( c[ 3 ][ 3 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 1 ] +
-                                                        c[ 1 ][ 2 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 2 ] ) * DETJ;
-
-              dRdU[ a * NDIM + 2 ][ b * NDIM + 0 ] -= ( c[ 0 ][ 2 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 0 ] +
-                                                        c[ 4 ][ 4 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 2 ] ) * DETJ;
-              dRdU[ a * NDIM + 2 ][ b * NDIM + 1 ] -= ( c[ 1 ][ 2 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 1 ] +
-                                                        c[ 3 ][ 3 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 2 ] ) * DETJ;
-              dRdU[ a * NDIM + 2 ][ b * NDIM + 2 ] -= ( c[ 4 ][ 4 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 0 ] +
-                                                        c[ 3 ][ 3 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 1 ] +
-                                                        c[ 2 ][ 2 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 2 ] ) * DETJ;
-            }
-          }
-
-          R1Tensor gravityForce = gravityVector;
-          gravityForce *= DETJ * density( k, q );
-          R[ q * NDIM + 0 ] += gravityForce[ 0 ];
-          R[ q * NDIM + 1 ] += gravityForce[ 1 ];
-          R[ q * NDIM + 2 ] += gravityForce[ 2 ];
-        }
-
-        // TODO It is simpler to do this...try it.
-        //  dRdU.Multiply(dof_np1,R);
         for( int a = 0; a < NUM_NODES_PER_ELEM; ++a )
         {
+          temp.AijBj( stress0, { DNDX[ a ][ 0 ], DNDX[ a ][ 1 ], DNDX[ a ][ 2 ] } );
+          realT maxF = temp.MaxVal();
+          maxForce.max( maxF );
+
+          R[ a * NDIM + 0 ] -= temp[ 0 ];
+          R[ a * NDIM + 1 ] -= temp[ 1 ];
+          R[ a * NDIM + 2 ] -= temp[ 2 ];
+
           for( int b = 0; b < NUM_NODES_PER_ELEM; ++b )
           {
-            for( int i = 0; i < NDIM; ++i )
-            {
-              for( int j = 0; j < NDIM; ++j )
-              {
-                R[ a * NDIM + i ] += dRdU[ a * NDIM + i ][ b * NDIM + j ] * uhat_local[ b ][ j ];
-              }
-            }
-          }
+            dRdU[ a * NDIM + 0 ][ b * NDIM + 0 ] -= ( c[ 0 ][ 0 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 0 ] +
+                                                      c[ 5 ][ 5 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 1 ] +
+                                                      c[ 4 ][ 4 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 2 ] ) * DETJ;
+            dRdU[ a * NDIM + 0 ][ b * NDIM + 1 ] -= ( c[ 5 ][ 5 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 0 ] +
+                                                      c[ 0 ][ 1 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 1 ] ) * DETJ;
+            dRdU[ a * NDIM + 0 ][ b * NDIM + 2 ] -= ( c[ 4 ][ 4 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 0 ] +
+                                                      c[ 0 ][ 2 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 2 ] ) * DETJ;
 
-          maxForce.max( fabs( R[ a * NDIM + 0 ] ) );
-          maxForce.max( fabs( R[ a * NDIM + 1 ] ) );
-          maxForce.max( fabs( R[ a * NDIM + 2 ] ) );
+            dRdU[ a * NDIM + 1 ][ b * NDIM + 0 ] -= ( c[ 0 ][ 1 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 0 ] +
+                                                      c[ 5 ][ 5 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 1 ] ) * DETJ;
+            dRdU[ a * NDIM + 1 ][ b * NDIM + 1 ] -= ( c[ 5 ][ 5 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 0 ] +
+                                                      c[ 1 ][ 1 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 1 ] +
+                                                      c[ 3 ][ 3 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 2 ] ) * DETJ;
+            dRdU[ a * NDIM + 1 ][ b * NDIM + 2 ] -= ( c[ 3 ][ 3 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 1 ] +
+                                                      c[ 1 ][ 2 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 2 ] ) * DETJ;
+
+            dRdU[ a * NDIM + 2 ][ b * NDIM + 0 ] -= ( c[ 0 ][ 2 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 0 ] +
+                                                      c[ 4 ][ 4 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 2 ] ) * DETJ;
+            dRdU[ a * NDIM + 2 ][ b * NDIM + 1 ] -= ( c[ 1 ][ 2 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 1 ] +
+                                                      c[ 3 ][ 3 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 2 ] ) * DETJ;
+            dRdU[ a * NDIM + 2 ][ b * NDIM + 2 ] -= ( c[ 4 ][ 4 ] * DNDX[ a ][ 0 ] * DNDX[ b ][ 0 ] +
+                                                      c[ 3 ][ 3 ] * DNDX[ a ][ 1 ] * DNDX[ b ][ 1 ] +
+                                                      c[ 2 ][ 2 ] * DNDX[ a ][ 2 ] * DNDX[ b ][ 2 ] ) * DETJ;
+          }
         }
 
-        for( int localNode = 0; localNode < NUM_NODES_PER_ELEM; ++localNode )
-        {
-          for( int dim = 0; dim < NDIM; ++dim )
-          {
-            globalIndex const dof = elementLocalDofIndex[ NDIM * localNode + dim ];
-            matrix.addToRowBinarySearchUnsorted< parallelDeviceAtomic >( dof,
-                                                                         elementLocalDofIndex,
-                                                                         dRdU[ NDIM * localNode + dim ],
-                                                                         NUM_NODES_PER_ELEM * NDIM );
+        R1Tensor gravityForce = gravityVector;
+        gravityForce *= DETJ * density( k, q );
+        R[ q * NDIM + 0 ] += gravityForce[ 0 ];
+        R[ q * NDIM + 1 ] += gravityForce[ 1 ];
+        R[ q * NDIM + 2 ] += gravityForce[ 2 ];
+      }
 
-            RAJA::atomicAdd< parallelDeviceAtomic >( &rhs[ dof ], R[ NDIM * localNode + dim ] );
+      // TODO It is simpler to do this...try it.
+      //  dRdU.Multiply(dof_np1,R);
+      for( int a = 0; a < NUM_NODES_PER_ELEM; ++a )
+      {
+        for( int b = 0; b < NUM_NODES_PER_ELEM; ++b )
+        {
+          for( int i = 0; i < NDIM; ++i )
+          {
+            for( int j = 0; j < NDIM; ++j )
+            {
+              R[ a * NDIM + i ] += dRdU[ a * NDIM + i ][ b * NDIM + j ] * uhat_local[ b ][ j ];
+            }
           }
+        }
+
+        maxForce.max( fabs( R[ a * NDIM + 0 ] ) );
+        maxForce.max( fabs( R[ a * NDIM + 1 ] ) );
+        maxForce.max( fabs( R[ a * NDIM + 2 ] ) );
+      }
+
+      for( int localNode = 0; localNode < NUM_NODES_PER_ELEM; ++localNode )
+      {
+        for( int dim = 0; dim < NDIM; ++dim )
+        {
+          globalIndex const dof = elementLocalDofIndex[ NDIM * localNode + dim ] - dofRankOffset;
+          if ( dof < 0 || dof >= matrix.numRows() ) continue;
+          matrix.addToRowBinarySearchUnsorted< parallelDeviceAtomic >( dof,
+                                                                        elementLocalDofIndex,
+                                                                        dRdU[ NDIM * localNode + dim ],
+                                                                        NUM_NODES_PER_ELEM * NDIM );
+
+          RAJA::atomicAdd< parallelDeviceAtomic >( &rhs[ dof ], R[ NDIM * localNode + dim ] );
         }
       }
     } );

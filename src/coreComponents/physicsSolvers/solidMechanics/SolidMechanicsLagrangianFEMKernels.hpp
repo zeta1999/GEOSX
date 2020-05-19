@@ -420,6 +420,7 @@ struct CRSImplicitKernel
           arrayView1d< integer const > const & GEOSX_UNUSED_PARAM( elemGhostRank ),
           arrayView2d< localIndex const, cells::NODE_MAP_USD > const & GEOSX_UNUSED_PARAM( elemsToNodes ),
           arrayView1d< globalIndex const > const & GEOSX_UNUSED_PARAM( globalDofNumber ),
+          globalIndex const GEOSX_UNUSED_PARAM( dofRankOffset ),
           arrayView2d< real64 const, nodes::REFERENCE_POSITION_USD > const & GEOSX_UNUSED_PARAM( X ),
           arrayView2d< real64 const, nodes::TOTAL_DISPLACEMENT_USD > const & GEOSX_UNUSED_PARAM( disp ),
           arrayView2d< real64 const, nodes::INCR_DISPLACEMENT_USD > const & GEOSX_UNUSED_PARAM( uhat ),
