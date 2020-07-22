@@ -140,3 +140,7 @@ install( DIRECTORY ../examples/
 install( DIRECTORY ../scripts/ 
      DESTINATION scripts
      )
+
+if( ENABLE_PYTHON )
+  add_subdirectory( pygeosx )
+endif()
