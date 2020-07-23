@@ -20,6 +20,7 @@ set(managers_headers
     TimeHistory/HistoryIO.hpp
     TimeHistory/HistoryDataSpec.hpp
     Outputs/BlueprintOutput.hpp
+    Outputs/PythonOutput.hpp
     Functions/FunctionBase.hpp
     Functions/SymbolicFunction.hpp
     Functions/TableFunction.hpp
@@ -57,6 +58,7 @@ set(managers_sources
     Tasks/TaskBase.cpp
     Tasks/TasksManager.cpp
     TimeHistory/PackCollection.cpp
+    Outputs/PythonOutput.cpp
     Functions/FunctionBase.cpp
     Functions/SymbolicFunction.cpp
     Functions/TableFunction.cpp
