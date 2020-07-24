@@ -168,10 +168,6 @@ void ProblemManager::ProblemSetup()
   RegisterDataOnMeshRecursive( GetGroup< DomainPartition >( groupKeys.domain )->getMeshBodies() );
 
   Initialize( this );
-
-  ApplyInitialConditions();
-
-  InitializePostInitialConditions( this );
 }
 
 
@@ -737,6 +733,7 @@ void ProblemManager::ApplyInitialConditions()
 {
   DomainPartition * domain = GetGroup< DomainPartition >( keys::domain );
   FieldSpecificationManager::get().ApplyInitialConditions( domain );
+  InitializePostInitialConditions( this );
 }
 
 void ProblemManager::ReadRestartOverwrite()
