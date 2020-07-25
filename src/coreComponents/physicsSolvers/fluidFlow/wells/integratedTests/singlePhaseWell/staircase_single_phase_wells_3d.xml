@@ -9,16 +9,15 @@
       logLevel="1"
       targetRegions="{ Channel, wellRegion1, wellRegion2 }">
       <NonlinearSolverParameters
-        lineSearchAction="0"
         newtonMaxIter="40"/>
       <LinearSolverParameters
         solverType="direct"
         logLevel="0"/>
     </SinglePhaseReservoir>
 
-    <SinglePhaseHybridFVM
+    <SinglePhaseFVM
       name="SinglePhaseFlow"
-      logLevel="1"
+      logLevel="0"
       discretization="singlePhaseTPFA"
       fluidNames="{ water }"
       solidNames="{ rock }"
@@ -132,7 +131,6 @@
       <TwoPointFluxApproximation
         name="singlePhaseTPFA"
         fieldName="pressure"
-        boundaryFieldName="facePressure"
         targetRegions="{ Channel }"
         coefficientName="permeability"/>
     </FiniteVolume>
