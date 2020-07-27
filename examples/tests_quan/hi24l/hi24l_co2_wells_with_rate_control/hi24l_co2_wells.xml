@@ -25,7 +25,8 @@
   			         maxTimeStepCuts="10"
 				 timestepCutFactor="0.8"
                                  newtonMaxIter="40"/>
-      <LinearSolverParameters solverType="direct"
+      <LinearSolverParameters solverType="fgmres"
+			      preconditionerType="mgr"
                               logLevel="0"/>
     </CompositionalMultiphaseReservoir>
     
@@ -368,10 +369,6 @@
     
   </Mesh>
 
-  <Geometry>
-    <Box name="all" xMin="-1e9, -1e9, -1e9" xMax="1e9, 1e9, 1e9"/>
-  </Geometry>
-
 
   <Events maxTime="1e11">
     <!-- This event is applied every cycle, and overrides the
@@ -399,7 +396,6 @@
     <FiniteVolume>
       <TwoPointFluxApproximation name="fluidTPFA"
                                  fieldName="pressure"
-                                 boundaryFieldName="boundaryFacePressure"
                                  coefficientName="permeability"/>
     </FiniteVolume>
 

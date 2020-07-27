@@ -6,7 +6,7 @@
                flowSolverName="compositionalMultiphaseFlow"
                wellSolverName="compositionalMultiphaseWell"
                logLevel="1"
-               initialDt="10"
+               initialDt="1e3"
                targetRegions="{domain,
                                wellRegion1,
                                wellRegion9}">
@@ -14,7 +14,8 @@
                                  lineSearchAction="0"
                                  maxTimeStepCuts="10"
                                  newtonMaxIter="40"/>
-      <LinearSolverParameters solverType="direct"
+      <LinearSolverParameters solverType="fgmres"
+			      preconditionerType="mgr"
                               logLevel="0"/>
     </CompositionalMultiphaseReservoir>
     
@@ -24,7 +25,8 @@
                                  fluidNames="{fluid1}"
                                  solidNames="{rock}"
                                  relPermNames="{relperm}"
-                                 temperature="368.15"
+				 temperature="368.15"
+				 maxCompFractionChange="0.5"
                                  useMass="1">
     </CompositionalMultiphaseFlow>
 
@@ -101,10 +103,6 @@
     
   </Mesh>
 
-  <Geometry>
-    <Box name="all" xMin="-1e9, -1e9, -1e9" xMax="1e9, 1e9, 1e9"/>
-  </Geometry>
-
 
   <Events maxTime="8e5">
     <!-- This event is applied every cycle, and overrides the
@@ -132,7 +130,6 @@
     <FiniteVolume>
       <TwoPointFluxApproximation name="fluidTPFA"
                                  fieldName="pressure"
-                                 boundaryFieldName="boundaryFacePressure"
                                  coefficientName="permeability"/>
     </FiniteVolume>
 

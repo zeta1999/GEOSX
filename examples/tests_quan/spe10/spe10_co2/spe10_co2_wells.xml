@@ -184,7 +184,6 @@
     <FiniteVolume>
       <TwoPointFluxApproximation name="fluidTPFA"
                                  fieldName="pressure"
-                                 boundaryFieldName="facePressure"
                                  coefficientName="permeability"/>
     </FiniteVolume>
 

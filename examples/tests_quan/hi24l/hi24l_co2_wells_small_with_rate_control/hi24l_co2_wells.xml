@@ -6,15 +6,18 @@
                flowSolverName="compositionalMultiphaseFlow"
                wellSolverName="compositionalMultiphaseWell"
                logLevel="1"
-	       initialDt="10"
+	       initialDt="1e2"
                targetRegions="{domain,
                                wellRegion1,
-                               wellRegion9}">
+                               wellRegion2}">
       <NonlinearSolverParameters newtonTol="1.0e-5"
 				 lineSearchAction="0"
   			         maxTimeStepCuts="10"
-                                 newtonMaxIter="40"/>
-      <LinearSolverParameters solverType="direct"
+				 dtIncIterLimit="0.2"
+                                 newtonMaxIter="20"/>
+      <LinearSolverParameters solverType="fgmres"
+			      preconditionerType="mgr"
+			      krylovMaxIter="1000"
                               logLevel="0"/>
     </CompositionalMultiphaseReservoir>
     
@@ -25,27 +28,29 @@
                                  solidNames="{rock}"
                                  relPermNames="{relperm}"
                                  temperature="368.15"
+				 maxCompFractionChange="0.9"
                                  useMass="1">
     </CompositionalMultiphaseFlow>
 
     <CompositionalMultiphaseWell name="compositionalMultiphaseWell"
                                  targetRegions="{wellRegion1,
-                                                 wellRegion9}"
+                                                 wellRegion2}"
                                  fluidNames="{fluid1}"
                                  relPermNames="{relperm}"
                                  wellTemperature="368.15"
+				 maxCompFractionChange="0.9"
                                  useMass="1">
         <WellControls name="wellControls1"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="1e3"
+                      targetRate="1e1"
 		      injectionStream="{0.995, 0.005}"/>
-        <WellControls name="wellControls9"
+        <WellControls name="wellControls2"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="1e3"
+                      targetRate="1e1"
               	      injectionStream="{0.995, 0.005}"/>
     </CompositionalMultiphaseWell>
 
@@ -56,7 +61,7 @@
     <PAMELAMeshGenerator name="CubeTetra"
                          file="../mesh/piece_of_mesh.msh"/>
 
-    <InternalWell name="well_producer1"
+    <InternalWell name="well_injector1"
                   wellRegionName="wellRegion1"
                   wellControlsName="wellControls1"
                   meshName="CubeTetra"
@@ -64,46 +69,41 @@
                                         { 385318, 3260340, -2100 } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
-        <Perforation name="producer1_perf1"
-                     distanceFromHead="199"/> 
-        <Perforation name="producer1_perf2"
-                     distanceFromHead="150"/> 
-        <Perforation name="producer1_perf3"
-                     distanceFromHead="100"/> 
-        <Perforation name="producer1_perf4"
-                     distanceFromHead="50"/> 
-        <Perforation name="producer1_perf5"
-                     distanceFromHead="10"/> 
+                  numElementsPerSegment="40">
+        <Perforation name="injector1_perf1"
+                     distanceFromHead="199"/>
+        <Perforation name="injector1_perf2"
+                     distanceFromHead="194"/>
+        <Perforation name="injector1_perf3"
+                     distanceFromHead="189"/>
+        <Perforation name="injector1_perf4"
+                     distanceFromHead="184"/>
+        <Perforation name="injector1_perf5"
+                     distanceFromHead="179"/>
     </InternalWell>
 
-    <InternalWell name="well_injector5"
-                  wellRegionName="wellRegion9"
-                  wellControlsName="wellControls9"
+    <InternalWell name="well_injector2"
+                  wellRegionName="wellRegion2"
+                  wellControlsName="wellControls2"
                   meshName="CubeTetra"
                   polylineNodeCoords="{ {386663, 3261450, -1900  },
                                         {386663, 3261450, -2100  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
-        <Perforation name="injector5_perf1"
-                     distanceFromHead="199"/> 
-        <Perforation name="injector5_perf2"
-                     distanceFromHead="150"/> 
-        <Perforation name="injector5_perf3"
-                     distanceFromHead="100"/> 
-        <Perforation name="injector5_perf4"
-                     distanceFromHead="50"/> 
-        <Perforation name="injector5_perf5"
-                     distanceFromHead="10"/> 
+                  numElementsPerSegment="40">
+        <Perforation name="injector2_perf1"
+                     distanceFromHead="199"/>
+        <Perforation name="injector2_perf2"
+                     distanceFromHead="194"/>
+        <Perforation name="injector2_perf3"
+                     distanceFromHead="189"/>
+        <Perforation name="injector2_perf4"
+                     distanceFromHead="184"/>
+        <Perforation name="injector2_perf5"
+                     distanceFromHead="179"/>
     </InternalWell>
     
   </Mesh>
-
-  <Geometry>
-    <Box name="all" xMin="-1e9, -1e9, -1e9" xMax="1e9, 1e9, 1e9"/>
-  </Geometry>
-
 
   <Events maxTime="1e8">
     <!-- This event is applied every cycle, and overrides the
@@ -115,7 +115,7 @@
     flag allows this event to request a dt modification to match an
     integer multiple of the timeFrequency. -->
     <PeriodicEvent name="outputs"
-                   timeFrequency="1e4"
+                   timeFrequency="1e5"
                    targetExactTimestep="1"
                    target="/Outputs/siloWellPump" />
 
@@ -131,7 +131,6 @@
     <FiniteVolume>
       <TwoPointFluxApproximation name="fluidTPFA"
                                  fieldName="pressure"
-                                 boundaryFieldName="boundaryFacePressure"
                                  coefficientName="permeability"/>
     </FiniteVolume>
 
@@ -143,7 +142,7 @@
 
     <WellElementRegion name="wellRegion1"
                        materialList="{fluid1,relperm}"/> 
-    <WellElementRegion name="wellRegion9"
+    <WellElementRegion name="wellRegion2"
                        materialList="{fluid1,relperm}"/> 
     
     
@@ -205,7 +204,8 @@
                setNames="{all}"
                objectPath="ElementRegions/domain/DEFAULT_TETRA"
                fieldName="pressure"
-               scale="9e6"/>
+               scale="1" 	       
+	       functionName="initialPressureFunction"/>
 
     <FieldSpecification name="initialComposition_co2"
                initialCondition="1"
@@ -223,11 +223,14 @@
                component="1"
                scale="0.995"/>
     
-    
   </FieldSpecifications>
 
   <Functions>
-
+    <TableFunction name="initialPressureFunction"
+                   inputVarNames="{elementCenter}"
+		   coordinateFiles="{xLin.geos,yLin.geos,zLin.geos}"
+		   voxelFile="pres.geos"
+		   interpolation="linear" />
   </Functions>
 
   <Outputs>
