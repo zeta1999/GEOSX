@@ -40,9 +40,11 @@ SinglePhaseHybridFVM::SinglePhaseHybridFVM( const std::string & name,
   m_faceDofKey( "" ),
   m_areaRelTol( 1e-8 )
 {
-
   // one cell-centered dof per cell
   m_numDofPerCell = 1;
+
+  m_linearSolverParameters.get().mgr.strategy = "SinglePhaseHybridFVM";
+
 }
 
 
@@ -253,17 +255,20 @@ void SinglePhaseHybridFVM::AssembleFluxTerms( real64 const GEOSX_UNUSED_PARAM( t
   } );
 }
 
-void
-SinglePhaseHybridFVM::ApplyBoundaryConditions( real64 const GEOSX_UNUSED_PARAM( time_n ),
-                                               real64 const GEOSX_UNUSED_PARAM( dt ),
-                                               DomainPartition & GEOSX_UNUSED_PARAM( domain ),
-                                               DofManager const & GEOSX_UNUSED_PARAM( dofManager ),
-                                               CRSMatrixView< real64, globalIndex const > const & GEOSX_UNUSED_PARAM( localMatrix ),
-                                               arrayView1d< real64 > const & GEOSX_UNUSED_PARAM( localRhs ) )
+
+void SinglePhaseHybridFVM::ApplyBoundaryConditions( real64 const time_n,
+                                                    real64 const dt,
+                                                    DomainPartition & domain,
+                                                    DofManager const & dofManager,
+                                                    CRSMatrixView< real64, globalIndex const > const & localMatrix,
+                                                    arrayView1d< real64 > const & localRhs )
 {
   GEOSX_MARK_FUNCTION;
-  // will implement boundary conditions later
+
+  SinglePhaseBase::ApplyBoundaryConditions( time_n, dt, domain, dofManager, localMatrix, localRhs );
+  // TODO: implement face boundary conditions here
 }
+
 
 real64 SinglePhaseHybridFVM::CalculateResidualNorm( DomainPartition const & domain,
                                                     DofManager const & dofManager,
