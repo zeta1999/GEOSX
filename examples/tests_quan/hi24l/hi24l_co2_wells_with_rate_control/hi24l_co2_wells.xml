@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Problem>
 
   <Solvers>
@@ -6,7 +7,7 @@
                flowSolverName="compositionalMultiphaseFlow"
                wellSolverName="compositionalMultiphaseWell"
                logLevel="1"
-	       initialDt="1"
+	       initialDt="1e3"
                targetRegions="{domain,
                                wellRegion1,
                                wellRegion2,
@@ -19,12 +20,12 @@
                                wellRegion9,
                                wellRegion10,
                                wellRegion11}">
-      <NonlinearSolverParameters newtonTol="1.0e-5"
+      <NonlinearSolverParameters newtonTol="1.0e-6"
 				 lineSearchAction="0"
-				 dtIncIterLimit="0.15"
+				 dtIncIterLimit="0.3"
+				 dtCutIterLimit="0.99"
   			         maxTimeStepCuts="10"
-				 timestepCutFactor="0.8"
-                                 newtonMaxIter="40"/>
+                                 newtonMaxIter="20"/>
       <LinearSolverParameters solverType="fgmres"
 			      preconditionerType="mgr"
                               logLevel="0"/>
@@ -37,6 +38,7 @@
                                  solidNames="{rock}"
                                  relPermNames="{relperm}"
                                  temperature="368.15"
+                                 maxCompFractionChange="0.5"
                                  useMass="1">
     </CompositionalMultiphaseFlow>
 
@@ -55,72 +57,73 @@
                                  fluidNames="{fluid1}"
                                  relPermNames="{relperm}"
                                  wellTemperature="368.15"
+                                 maxCompFractionChange="0.8"
                                  useMass="1">
         <WellControls name="wellControls1"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls2"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls3"
                       type="injector"
                       control="liquidRate" 
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls4"
                       type="injector"
                       control="liquidRate" 
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls5"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls6"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls7"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls8"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>	      
         <WellControls name="wellControls9"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls10"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls11"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="5e3"
+                      targetRate="3e1"
               	      injectionStream="{0.995, 0.005}"/>
     </CompositionalMultiphaseWell>
 
@@ -139,18 +142,11 @@
                                         { 386431, 3262250, -2200.15 } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector1_perf1"
                      distanceFromHead="200"/> 
         <Perforation name="injector1_perf2"
-                     distanceFromHead="160"/> 
-        <Perforation name="injector1_perf3"
-                     distanceFromHead="110"/> 
-        <Perforation name="injector1_perf4"
-                     distanceFromHead="60"/> 
-        <Perforation name="injector1_perf5"
-                     distanceFromHead="10"/> 
-
+                     distanceFromHead="179"/>
     </InternalWell>
 
     <InternalWell name="well_injector2"
@@ -158,20 +154,14 @@
                   wellControlsName="wellControls2"
                   meshName="CubeTetra"
                   polylineNodeCoords="{ { 394519, 3262820, -1990.15 },
-                                        { 394519, 3262820, -2200.15 } }"
+                                        { 394519, 3262820, -2170.15 } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector2_perf1"
-                     distanceFromHead="200"/> 
+                     distanceFromHead="170"/> 
         <Perforation name="injector2_perf2"
-                     distanceFromHead="160"/> 
-       <Perforation name="injector2_perf3"
-                     distanceFromHead="110"/> 
-        <Perforation name="injector2_perf4"
-                     distanceFromHead="60"/> 
-        <Perforation name="injector2_perf5"
-                     distanceFromHead="10"/> 
+                     distanceFromHead="153"/>
     </InternalWell>
 
     <InternalWell name="well_injector3"
@@ -182,17 +172,11 @@
                                         { 390873, 3262620, -2200.15 } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector3_perf1"
-                     distanceFromHead="200"/> 
+                     distanceFromHead="205"/>
         <Perforation name="injector3_perf2"
-                     distanceFromHead="160"/> 
-        <Perforation name="injector3_perf3"
-                     distanceFromHead="110"/> 
-        <Perforation name="injector3_perf4"
-                     distanceFromHead="60"/> 
-        <Perforation name="injector3_perf5"
-                     distanceFromHead="10"/>
+                     distanceFromHead="172"/>
     </InternalWell>
  
     <InternalWell name="well_injector4"
@@ -203,18 +187,11 @@
                                         { 390561, 3265500, -2200.15 } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector4_perf1"
-                     distanceFromHead="200"/> 
+                     distanceFromHead="205"/>
         <Perforation name="injector4_perf2"
-                     distanceFromHead="160"/> 
-        <Perforation name="injector4_perf3"
-                     distanceFromHead="110"/> 
-        <Perforation name="injector4_perf4"
-                     distanceFromHead="60"/> 
-        <Perforation name="injector4_perf5"
-                     distanceFromHead="10"/> 
-
+                     distanceFromHead="172"/>
     </InternalWell>
 
     <InternalWell name="well_injector5"
@@ -225,17 +202,11 @@
                                         {388343,  3272320, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector5_perf1"
-                     distanceFromHead="300"/> 
+                     distanceFromHead="300"/>
         <Perforation name="injector5_perf2"
-                     distanceFromHead="250"/> 
-        <Perforation name="injector5_perf3"
-                     distanceFromHead="200"/> 
-        <Perforation name="injector5_perf4"
-                     distanceFromHead="150"/> 
-        <Perforation name="injector5_perf5"
-                     distanceFromHead="100"/> 
+                     distanceFromHead="259"/>
     </InternalWell>
 
     <InternalWell name="well_injector6"
@@ -246,17 +217,11 @@
                                         {387222, 3273310, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector6_perf1"
-                     distanceFromHead="300"/> 
+                     distanceFromHead="300"/>
         <Perforation name="injector6_perf2"
-                     distanceFromHead="250"/> 
-        <Perforation name="injector6_perf3"
-                     distanceFromHead="200"/> 
-        <Perforation name="injector6_perf4"
-                     distanceFromHead="150"/> 
-        <Perforation name="injector6_perf5"
-                     distanceFromHead="100"/> 
+                     distanceFromHead="269"/>
     </InternalWell>
 
 
@@ -268,17 +233,11 @@
                                         {395651, 3271910, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector7_perf1"
-                     distanceFromHead="300"/> 
+                     distanceFromHead="300"/>
         <Perforation name="injector7_perf2"
-                     distanceFromHead="250"/> 
-        <Perforation name="injector7_perf3"
-                     distanceFromHead="200"/> 
-        <Perforation name="injector7_perf4"
-                     distanceFromHead="150"/> 
-        <Perforation name="injector7_perf5"
-                     distanceFromHead="100"/> 
+                     distanceFromHead="269"/>
     </InternalWell>
 
 
@@ -290,17 +249,11 @@
                                         {391256, 3272510, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector8_perf1"
-                     distanceFromHead="300"/> 
+                     distanceFromHead="300"/>
         <Perforation name="injector8_perf2"
-                     distanceFromHead="250"/> 
-        <Perforation name="injector8_perf3"
-                     distanceFromHead="200"/> 
-        <Perforation name="injector8_perf4"
-                     distanceFromHead="150"/> 
-        <Perforation name="injector8_perf5"
-                     distanceFromHead="100"/> 
+                     distanceFromHead="269"/>
     </InternalWell>
 
     <InternalWell name="well_injector9"
@@ -311,17 +264,11 @@
                                         {390237, 3270320, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector9_perf1"
-                     distanceFromHead="300"/> 
+                     distanceFromHead="300"/>
         <Perforation name="injector9_perf2"
-                     distanceFromHead="250"/> 
-        <Perforation name="injector9_perf3"
-                     distanceFromHead="200"/> 
-        <Perforation name="injector9_perf4"
-                     distanceFromHead="150"/> 
-        <Perforation name="injector9_perf5"
-                     distanceFromHead="100"/> 
+                     distanceFromHead="249"/>
     </InternalWell>
 
     <InternalWell name="well_injector10"
@@ -332,17 +279,11 @@
                                         {388461, 3267730, -2081  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector10_perf1"
-                     distanceFromHead="300"/> 
+                     distanceFromHead="300"/>
         <Perforation name="injector10_perf2"
-                     distanceFromHead="250"/> 
-        <Perforation name="injector10_perf3"
-                     distanceFromHead="200"/> 
-        <Perforation name="injector10_perf4"
-                     distanceFromHead="150"/> 
-        <Perforation name="injector10_perf5"
-                     distanceFromHead="100"/> 
+                     distanceFromHead="269"/>
     </InternalWell>
 
     <InternalWell name="well_injector11"
@@ -353,17 +294,11 @@
                                         { 394329, 3267380, -2081  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="20">
+                  numElementsPerSegment="10">
         <Perforation name="injector11_perf1"
-                     distanceFromHead="300"/> 
+                     distanceFromHead="300"/>
         <Perforation name="injector11_perf2"
-                     distanceFromHead="250"/> 
-        <Perforation name="injector11_perf3"
-                     distanceFromHead="200"/> 
-        <Perforation name="injector11_perf4"
-                     distanceFromHead="150"/> 
-        <Perforation name="injector11_perf5"
-                     distanceFromHead="100"/> 
+                     distanceFromHead="269"/>
     </InternalWell>
     
     
@@ -379,10 +314,10 @@
     <!-- This event is applied every 1.0s.  The targetExactTimestep
     flag allows this event to request a dt modification to match an
     integer multiple of the timeFrequency. -->
-    <PeriodicEvent name="outputs"
-                   timeFrequency="1e5"
+    <PeriodicEvent name="vtk"
+                   timeFrequency="1e6"
                    targetExactTimestep="1"
-                   target="/Outputs/siloWellPump" />
+                   target="/Outputs/vtkOutput" />
 
     <PeriodicEvent name="restarts"
                    timeFrequency="1e99"
@@ -487,7 +422,8 @@
                setNames="{all}"
                objectPath="ElementRegions/domain/DEFAULT_TETRA"
                fieldName="pressure"
-               scale="9e6"/>
+               scale="1" 	       
+	       functionName="initialPressureFunction"/>
 
     <FieldSpecification name="initialComposition_co2"
                initialCondition="1"
@@ -495,7 +431,7 @@
                objectPath="ElementRegions/domain/DEFAULT_TETRA"
                fieldName="globalCompFraction"
                component="0"
-               scale="0.005"/>
+               scale="0.0001"/>
 
     <FieldSpecification name="initialComposition_water"
                initialCondition="1"
@@ -503,16 +439,22 @@
                objectPath="ElementRegions/domain/DEFAULT_TETRA"
                fieldName="globalCompFraction"
                component="1"
-               scale="0.995"/>
+               scale="0.9999"/>
     
   </FieldSpecifications>
 
   <Functions>
 
+    <TableFunction name="initialPressureFunction"
+                   inputVarNames="{elementCenter}"
+		   coordinateFiles="{xLin.geos,yLin.geos,zLin.geos}"
+		   voxelFile="pres.geos"
+		   interpolation="linear" />
+    
   </Functions>
 
   <Outputs>
-      <Silo name="siloWellPump"/>
+      <VTK name="vtkOutput"/>          
       <Restart name="sidreRestart"/>
   </Outputs>
 </Problem>

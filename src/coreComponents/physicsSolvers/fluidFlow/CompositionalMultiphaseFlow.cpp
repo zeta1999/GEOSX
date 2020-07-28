@@ -1342,6 +1342,20 @@ bool CompositionalMultiphaseFlow::CheckSystemSolution( DomainPartition const & d
             check.min( newDens >= 0.0 );
           }
         }
+        else
+        {
+          real64 totalDens = 0.0;
+          for( localIndex ic = 0; ic < NC; ++ic )
+          {
+            real64 const newDens = compDens[ei][ic] + dCompDens[ei][ic] + scalingFactor * localSolution[localRow + ic + 1];
+            totalDens += (newDens > 0.0) ? newDens : 0.0;
+          }
+          if( totalDens < 1e-6 )
+          {
+            std::cout << "flow == wrong total dens = " << totalDens << std::endl;
+          }
+          check.min( totalDens >= 1e-6 );
+        }
       }
     } );
 

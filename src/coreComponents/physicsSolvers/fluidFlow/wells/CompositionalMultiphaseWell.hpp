@@ -57,7 +57,11 @@ public:
   // define the row offset of the residual equations
   struct RowOffset
   {
+#ifndef REORDER_WELL_EQUATIONS
     static constexpr integer CONTROL = 0;
+#else
+    static constexpr integer VOLBAL  = 0;
+#endif
     static constexpr integer MASSBAL = 1;
   };
 

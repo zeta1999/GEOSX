@@ -125,7 +125,11 @@ struct ControlEquationHelper
       controlEqn = ( currentBHP - targetBHP ) * normalizer;
       dControlEqn_dX = normalizer;
       dofColIndex = wellElemDofNumber + CompositionalMultiphaseWell::ColOffset::DPRES;
+#ifndef REORDER_WELL_EQUATIONS
       eqnRowIndex = wellElemDofNumber + CompositionalMultiphaseWell::RowOffset::CONTROL - rankOffset;
+#else
+      eqnRowIndex = wellElemDofNumber + CompositionalMultiphaseWell::RowOffset::MASSBAL + numComponents - rankOffset;
+#endif
     }
     else if( currentControl == WellControls::Control::LIQUIDRATE ) // liquid rate control
     {
@@ -140,7 +144,11 @@ struct ControlEquationHelper
       controlEqn = ( currentConnRate - targetConnRate ) * normalizer;
       dControlEqn_dX = normalizer;
       dofColIndex = wellElemDofNumber + CompositionalMultiphaseWell::ColOffset::DCOMP + numComponents;
+#ifndef REORDER_WELL_EQUATIONS
       eqnRowIndex = wellElemDofNumber + CompositionalMultiphaseWell::RowOffset::CONTROL - rankOffset;
+#else
+      eqnRowIndex = wellElemDofNumber + CompositionalMultiphaseWell::RowOffset::MASSBAL + numComponents - rankOffset;
+#endif
     }
     else
     {
@@ -526,7 +534,11 @@ struct PressureRelationKernel
         globalIndex const offsetNext = wellElemDofNumber[iwelemNext];
         globalIndex const offsetCurrent = wellElemDofNumber[iwelem];
 
+#ifndef REORDER_WELL_EQUATIONS
         globalIndex const eqnRowIndex = offsetCurrent + CompositionalMultiphaseWell::RowOffset::CONTROL - rankOffset;
+#else
+        globalIndex const eqnRowIndex = offsetCurrent + CompositionalMultiphaseWell::RowOffset::MASSBAL + NC  - rankOffset;
+#endif
         dofColIndices[localDofIndexPresNext] = offsetNext + CompositionalMultiphaseWell::ColOffset::DPRES;
         dofColIndices[localDofIndexPresCurrent] = offsetCurrent + CompositionalMultiphaseWell::ColOffset::DPRES;
 
@@ -942,7 +954,11 @@ struct VolumeBalanceKernel
 
       // get equation/dof indices
       globalIndex const offset = wellElemDofNumber[iwelem];
+#ifndef REORDER_WELL_EQUATIONS
       localIndex const volBalRowOffset = CompositionalMultiphaseWell::RowOffset::MASSBAL + NC;
+#else
+      localIndex const volBalRowOffset = CompositionalMultiphaseWell::RowOffset::VOLBAL;
+#endif
       globalIndex const localVolBalanceEqnIndex = LvArray::integerConversion< localIndex >( offset - rankOffset ) + volBalRowOffset;
       for( localIndex jdof = 0; jdof < welemNDOF; ++jdof )
       {
@@ -1315,6 +1331,21 @@ struct SolutionCheckKernel
             {
               minVal.min( 0 );
             }
+          }
+        }
+        else
+        {
+          real64 totalDens = 0.0;
+          for( localIndex ic = 0; ic < numComponents; ++ic )
+          {
+            lid = wellElemDofNumber[iwelem] + ic + 1 - rankOffset;
+            real64 const newDens = wellElemCompDens[iwelem][ic] + dWellElemCompDens[iwelem][ic]
+                                   + scalingFactor * localSolution[lid];
+            totalDens += (newDens > 0.0) ? newDens : 0.0;
+          }
+          if( totalDens < 1e-6 )
+          {
+            minVal.min( 0 );
           }
         }
       }

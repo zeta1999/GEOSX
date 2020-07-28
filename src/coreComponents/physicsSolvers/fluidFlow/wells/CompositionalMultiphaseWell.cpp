@@ -53,7 +53,7 @@ CompositionalMultiphaseWell::CompositionalMultiphaseWell( const string & name,
   m_temperature( 0.0 ),
   m_useMass( false ),
   m_maxCompFracChange( 1.0 ),
-  m_minScalingFactor( 0.1 ),
+  m_minScalingFactor( 0.001 ),
   m_allowCompDensChopping( 1 )
 {
   this->registerWrapper( viewKeyStruct::temperatureString, &m_temperature )->
@@ -751,6 +751,7 @@ CompositionalMultiphaseWell::CheckSystemSolution( DomainPartition const & domain
 
     if( subRegionSolutionCheck == 0 )
     {
+      std::cout << "solution not valid in " << subRegion.getName() << std::endl;
       localCheck = 0;
     }
   } );
