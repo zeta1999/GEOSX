@@ -1,5 +1,5 @@
 /*
- * ------------------------------------------------------------------------------------------------------------
+1;4205;0c * ------------------------------------------------------------------------------------------------------------
  * SPDX-License-Identifier: LGPL-2.1-only
  *
  * Copyright (c) 2018-2019 Lawrence Livermore National Security LLC
@@ -345,8 +345,19 @@ void CO2SolubilityFunction::Partition( EvalVarArgs const & pressure, EvalVarArgs
   X.m_der[0] = solubility.m_der[0];
 
   //Y = C/W = z/(1-z)
+  if( compFraction[m_CO2Index].m_var > 1 - 1e-6 )
+  {
+    std::cout << "+++ Division by zero here : " << compFraction[m_CO2Index].m_var << "+++" << std::endl;
+  }
 
-  Y = compFraction[m_CO2Index] / (1.0 - compFraction[m_CO2Index]);
+  if( compFraction[m_CO2Index].m_var > 1.0 - 1e-6 )
+  {
+    Y = compFraction[m_CO2Index] * 1e6;
+  }
+  else
+  {
+    Y = compFraction[m_CO2Index] / (1.0 - compFraction[m_CO2Index]);
+  }
 
   if( Y < X )
   {
@@ -356,7 +367,9 @@ void CO2SolubilityFunction::Partition( EvalVarArgs const & pressure, EvalVarArgs
     phaseFraction[m_phaseGasIndex] = 0.0;
 
     for( localIndex c = 0; c < m_componentNames.size(); ++c )
+    {      
       phaseCompFraction[m_phaseLiquidIndex][c] = compFraction[c];
+    }
 
   }
   else
@@ -364,11 +377,21 @@ void CO2SolubilityFunction::Partition( EvalVarArgs const & pressure, EvalVarArgs
     // two-phase
     // liquid phase fraction = (Csat + W) / (C + W) = (Csat/W + 1) / (C/W + 1)
 
+    if( Y + 1.0 < 1e-6 )
+    {
+      std::cout << "++ Division by zero here : " << Y.m_var + 1.0  << "++" << std::endl;
+    }
+    
     phaseFraction[m_phaseLiquidIndex] = (X + 1.0)/ (Y + 1.0);
     phaseFraction[m_phaseGasIndex] = 1.0 - phaseFraction[m_phaseLiquidIndex];
 
     //liquid phase composition  CO2 = Csat / (Csat + W) = (Csat/W) / (Csat/W + 1)
 
+    if( X + 1.0 < 1e-6 )
+    {
+      std::cout << "+ Division by zero here : " << X.m_var + 1.0  << "+" << std::endl;
+    }
+    
     phaseCompFraction[m_phaseLiquidIndex][m_CO2Index] = X / (X + 1.0);
     phaseCompFraction[m_phaseLiquidIndex][m_waterIndex] = 1.0 - phaseCompFraction[m_phaseLiquidIndex][m_CO2Index];
 
