@@ -1260,7 +1260,10 @@ void SiloFile::WriteElementRegionSilo( ElementRegionBase const & elemRegion,
                                        real64 const problemTime,
                                        bool const isRestart )
 {
-
+  // TODO: This is a hack.
+  conduit::Node conduitNode;
+  dataRepository::Group fakeGroup( elemRegion.getName(), conduitNode );
+  
   localIndex numElems = 0;
   dataRepository::Group fakeGroup( elemRegion.getName(), nullptr );
   fakeGroup.setRestartFlags( dataRepository::RestartFlags::NO_WRITE );

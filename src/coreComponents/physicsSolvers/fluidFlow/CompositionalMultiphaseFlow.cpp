@@ -30,6 +30,7 @@
 #include "managers/FieldSpecification/FieldSpecificationManager.hpp"
 #include "managers/DomainPartition.hpp"
 #include "managers/NumericalMethodsManager.hpp"
+#include "managers/GeosxState.hpp"
 #include "mpiCommunications/CommunicationTools.hpp"
 #include "mpiCommunications/MpiWrapper.hpp"
 #include "physicsSolvers/fluidFlow/CompositionalMultiphaseFlowKernels.hpp"
@@ -951,7 +952,7 @@ void CompositionalMultiphaseFlow::ApplySourceFluxBC( real64 const time,
                                                      arrayView1d< real64 > const & localRhs ) const
 {
 
-  FieldSpecificationManager & fsManager = FieldSpecificationManager::get();
+  FieldSpecificationManager & fsManager = getGlobalState().getFieldSpecificationManager();
 
   string const dofKey = dofManager.getKey( viewKeyStruct::dofFieldString );
 
@@ -1006,7 +1007,7 @@ void CompositionalMultiphaseFlow::ApplyDirichletBC( real64 const time,
 {
   localIndex const NC = m_numComponents;
 
-  FieldSpecificationManager & fsManager = FieldSpecificationManager::get();
+  FieldSpecificationManager & fsManager = getGlobalState().getFieldSpecificationManager();
 
   map< string, map< string, array1d< bool > > > bcStatusMap; // map to check consistent application of BC
 

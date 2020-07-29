@@ -92,6 +92,8 @@ public:
   explicit Group( std::string const & name,
                   Group * const parent );
 
+  explicit Group( std::string const & name,
+                  conduit::Node & rootNode );
 
   /**
    * @brief Move constructor
@@ -1326,7 +1328,7 @@ public:
 
   inline string const getPath() const
   {
-    return m_conduitNode.path();
+    return getConduitNode().path();
   }
 
   /**
@@ -1404,6 +1406,11 @@ public:
    * @return reference to inner conduit::Node member
    */
   conduit::Node & getConduitNode()
+  {
+    return m_conduitNode;
+  }
+
+  conduit::Node const & getConduitNode() const
   {
     return m_conduitNode;
   }
