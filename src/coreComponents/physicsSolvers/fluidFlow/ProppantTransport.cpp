@@ -306,7 +306,7 @@ void ProppantTransport::InitializePostInitialConditions_PreSubGroups( Group * co
   fieldNames["elems"].emplace_back( string( viewKeyStruct::proppantConcentrationString ) );
   fieldNames["elems"].emplace_back( string( viewKeyStruct::componentConcentrationString ) );
 
-  CommunicationTools::SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
+  getGlobalState().getCommunicationTools().SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
 
   ResetViews( mesh );
 
@@ -968,7 +968,7 @@ void ProppantTransport::ApplySystemSolution( DofManager const & dofManager,
   fieldNames["elems"].emplace_back( string( viewKeyStruct::deltaProppantConcentrationString ) );
   fieldNames["elems"].emplace_back( string( viewKeyStruct::deltaComponentConcentrationString ) );
 
-  CommunicationTools::SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
+  getGlobalState().getCommunicationTools().SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
 
   forTargetSubRegions( mesh, [&]( localIndex const targetIndex,
                                   ElementSubRegionBase & subRegion )
@@ -1255,7 +1255,7 @@ void ProppantTransport::UpdateCellBasedFlux( real64 const GEOSX_UNUSED_PARAM( ti
   std::map< string, string_array > fieldNames;
   fieldNames["elems"].emplace_back( string( viewKeyStruct::cellBasedFluxString ) );
 
-  CommunicationTools::SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
+  getGlobalState().getCommunicationTools().SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
 
 }
 
@@ -1321,7 +1321,7 @@ void ProppantTransport::UpdateProppantPackVolume( real64 const GEOSX_UNUSED_PARA
     fieldNames["elems"].emplace_back( string( viewKeyStruct::proppantExcessPackVolumeString ) );
     fieldNames["elems"].emplace_back( string( viewKeyStruct::proppantLiftFluxString ) );
 
-    CommunicationTools::SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
+    getGlobalState().getCommunicationTools().SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
   }
 
   forTargetSubRegions( mesh, [&]( localIndex const,
@@ -1348,7 +1348,7 @@ void ProppantTransport::UpdateProppantPackVolume( real64 const GEOSX_UNUSED_PARA
     fieldNames["elems"].emplace_back( string( viewKeyStruct::proppantConcentrationString ) );
     fieldNames["elems"].emplace_back( string( viewKeyStruct::proppantPackVolumeFractionString ) );
 
-    CommunicationTools::SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
+    getGlobalState().getCommunicationTools().SynchronizeFields( fieldNames, &mesh, domain.getNeighbors(), true );
   }
 
   forTargetSubRegions( mesh, [&]( localIndex const,
