@@ -165,7 +165,7 @@ void ProblemManager::ParseCommandLineInput()
 {
   Group * commandLine = GetGroup< Group >( groupKeys.commandLine );
 
-  CommandLineOptions const & opts = getCommandLineOptions();
+  CommandLineOptions const & opts = getGlobalState().getCommandLineOptions();
 
   commandLine->getReference< std::string >( viewKeys.restartFileName ) = opts.restartFileName;
   commandLine->getReference< integer >( viewKeys.beginFromRestart ) = opts.beginFromRestart;
@@ -213,11 +213,10 @@ void ProblemManager::ParseCommandLineInput()
 }
 
 
-bool ProblemManager::ParseRestart( std::string & restartFileName )
+bool ProblemManager::ParseRestart( std::string & restartFileName, CommandLineOptions const & options )
 {
-  CommandLineOptions const & opts = getCommandLineOptions();
-  bool const beginFromRestart = opts.beginFromRestart;
-  restartFileName = opts.restartFileName;
+  bool const beginFromRestart = options.beginFromRestart;
+  restartFileName = options.restartFileName;
 
   if( beginFromRestart == 1 )
   {

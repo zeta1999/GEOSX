@@ -34,6 +34,7 @@ class ConstitutiveManager;
 }
 class FunctionManager;
 class FieldSpecificationManager;
+struct CommandLineOptions;
 
 /**
  * @class ProblemManager
@@ -89,7 +90,7 @@ public:
    * @param restartFileName the name of the restart file
    * @return flag indicating beginFromRestart status
    */
-  static bool ParseRestart( std::string & restartFileName );
+  static bool ParseRestart( std::string & restartFileName, CommandLineOptions const & options );
 
   /**
    * @brief Generates the xml schema documentation

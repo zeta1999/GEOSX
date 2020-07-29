@@ -21,7 +21,7 @@
 
 // TPL includes
 #include <gtest/gtest.h>
-
+#include <conduit.hpp>
 
 using namespace geosx;
 using namespace geosx::dataRepository;
@@ -30,7 +30,9 @@ void TestMeshImport( string const & inputStringMesh,
                      string const & inputStringRegion,
                      string const & propertyToTest )
 {
-  MeshManager meshManager( "mesh", nullptr );
+  conduit::Node node;
+  Group root( "root", node );
+  MeshManager meshManager( "mesh", &root );
 
   // Load the mesh
   xmlWrapper::xmlDocument xmlDocument;
@@ -41,7 +43,7 @@ void TestMeshImport( string const & inputStringMesh,
   meshManager.PostProcessInputRecursive();
 
   // Create the domain and generate the Mesh
-  auto domain = std::unique_ptr< DomainPartition >( new DomainPartition( "domain", nullptr ) );
+  auto domain = std::unique_ptr< DomainPartition >( new DomainPartition( "domain", &root ) );
   meshManager.GenerateMeshes( domain.get() );
 
   Group * const meshBodies = domain->getMeshBodies();
@@ -87,7 +89,9 @@ void TestMeshImport( string const & inputStringMesh,
 
 TEST( PAMELAImport, testGMSH )
 {
-  MeshManager meshManager( "mesh", nullptr );
+  conduit::Node node;
+  Group root( "root", node );
+  MeshManager meshManager( "mesh", &root );
 
   std::stringstream inputStreamMesh;
   inputStreamMesh <<
@@ -115,7 +119,9 @@ TEST( PAMELAImport, testGMSH )
 
 TEST( PAMELAImport, testECLIPSE )
 {
-  MeshManager meshManager( "mesh", nullptr );
+  conduit::Node node;
+  Group root( "root", node );
+  MeshManager meshManager( "mesh", &root );
 
   std::stringstream inputStreamMesh;
   inputStreamMesh <<
