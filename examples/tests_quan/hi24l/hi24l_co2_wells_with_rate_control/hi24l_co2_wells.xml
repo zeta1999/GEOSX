@@ -7,7 +7,7 @@
                flowSolverName="compositionalMultiphaseFlow"
                wellSolverName="compositionalMultiphaseWell"
                logLevel="1"
-	       initialDt="1e3"
+	       initialDt="1e2"
                targetRegions="{domain,
                                wellRegion1,
                                wellRegion2,
@@ -22,10 +22,10 @@
                                wellRegion11}">
       <NonlinearSolverParameters newtonTol="1.0e-6"
 				 lineSearchAction="0"
-				 dtIncIterLimit="0.3"
+				 dtIncIterLimit="0.15"
 				 dtCutIterLimit="0.99"
   			         maxTimeStepCuts="10"
-                                 newtonMaxIter="20"/>
+                                 newtonMaxIter="40"/>
       <LinearSolverParameters solverType="fgmres"
 			      preconditionerType="mgr"
                               logLevel="0"/>
@@ -305,7 +305,7 @@
   </Mesh>
 
 
-  <Events maxTime="1e11">
+  <Events maxTime="2e7">
     <!-- This event is applied every cycle, and overrides the
     solver time-step request -->
     <PeriodicEvent name="solverApplications"
@@ -315,7 +315,7 @@
     flag allows this event to request a dt modification to match an
     integer multiple of the timeFrequency. -->
     <PeriodicEvent name="vtk"
-                   timeFrequency="1e6"
+                   timeFrequency="1e7"
                    targetExactTimestep="1"
                    target="/Outputs/vtkOutput" />
 
