@@ -195,15 +195,6 @@ void ProblemManager::ParseCommandLineInput()
     string notUsed;
     splitPath( inputFileName, xmlFolder, notUsed );
     Path::pathPrefix() = xmlFolder;
-
-    if( outputDirectory != "." )
-    {
-      mkdir( outputDirectory.data(), 0755 );
-      if( chdir( outputDirectory.data()) != 0 )
-      {
-        GEOSX_ERROR( "Could not change to the output directory: " + outputDirectory );
-      }
-    }
   }
 
   if( opts.suppressMoveLogging )
