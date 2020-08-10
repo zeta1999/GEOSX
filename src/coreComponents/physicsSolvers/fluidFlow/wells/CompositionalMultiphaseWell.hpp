@@ -19,6 +19,8 @@
 #ifndef GEOSX_PHYSICSSOLVERS_FLUIDFLOW_WELLS_COMPOSITIONALMULTIPHASEWELL_HPP_
 #define GEOSX_PHYSICSSOLVERS_FLUIDFLOW_WELLS_COMPOSITIONALMULTIPHASEWELL_HPP_
 
+//#define REORDER_WELL_EQUATIONS
+
 #include "WellSolverBase.hpp"
 #include "constitutive/relativePermeability/RelativePermeabilityBase.hpp"
 #include "physicsSolvers/fluidFlow/CompositionalMultiphaseFlow.hpp"

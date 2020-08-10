@@ -19,6 +19,8 @@
 #ifndef GEOSX_PHYSICSSOLVERS_FLUIDFLOW_WELLS_COMPOSITIONALMULTIPHASEWELLKERNELS_HPP
 #define GEOSX_PHYSICSSOLVERS_FLUIDFLOW_WELLS_COMPOSITIONALMULTIPHASEWELLKERNELS_HPP
 
+//#define REORDER_WELL_EQUATIONS
+
 #include "common/DataTypes.hpp"
 #include "rajaInterface/GEOS_RAJA_Interface.hpp"
 #include "constitutive/fluid/MultiFluidBase.hpp"
@@ -116,9 +118,9 @@ struct ControlEquationHelper
 
       // get the pressure and compute normalizer
       real64 const currentBHP = wellElemPressure + dWellElemPressure;
-      real64 const normalizer = targetBHP > 1e-13
+      real64 const normalizer = /*targetBHP > 1e-13
                                 ? 1.0 / targetBHP
-                                : 1.0;
+                                :*/ 1.0;
 
       // control equation is a normalized difference
       // between current pressure and target pressure
@@ -135,9 +137,9 @@ struct ControlEquationHelper
     {
       // get rates and compute normalizer
       real64 const currentConnRate = connRate + dConnRate;
-      real64 const normalizer = targetConnRate > 1e-13
+      real64 const normalizer = /*targetConnRate > 1e-13
                                 ? 1.0 / ( 1e-2 * targetConnRate ) // hard-coded value comes from AD-GPRS
-                                : 1.0;
+                                :*/ 1.0;
 
       // control equation is a normalized difference
       // between current rate and target rate
@@ -454,9 +456,9 @@ struct PressureRelationKernel
 
     // compute a coefficient to normalize the momentum equation
     //real64 const targetBHP = wellControls.GetTargetBHP();
-    real64 const normalizer = targetBHP > 1e-15
+    real64 const normalizer = /*targetBHP > 1e-15
                               ? 1.0 / targetBHP
-                              : 1.0;
+                              :*/ 1.0;
 
     RAJA::ReduceMax< REDUCE_POLICY, localIndex > switchControl( 0 );
 
