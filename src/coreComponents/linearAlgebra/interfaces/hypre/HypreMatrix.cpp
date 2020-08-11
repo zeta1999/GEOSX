@@ -234,7 +234,7 @@ void HypreMatrix::zero()
 void HypreMatrix::open()
 {
   GEOSX_LAI_ASSERT( created() && closed() );
-  GEOSX_LAI_CHECK_ERROR( HYPRE_IJMatrixInitialize( m_ij_mat ) );
+  //GEOSX_LAI_CHECK_ERROR( HYPRE_IJMatrixInitialize( m_ij_mat ) );
   m_closed = false;
 }
 

@@ -298,7 +298,7 @@ void HypreSolver::solve_krylov( HypreMatrix & mat,
   GEOSX_LAI_CHECK_ERROR( solverFuncs.getNumIter( solver, &numIter ) );
   m_result.numIterations = numIter;
 
-  if( m_parameters.logLevel >= 1 )
+  if( m_parameters.logLevel >= 0 )
   {
     GEOSX_LOG_RANK_0( "\t\tLinear Solver | Iter = " << numIter <<
                       " | Final Relative Tol " << finalNorm <<
