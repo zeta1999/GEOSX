@@ -50,7 +50,7 @@ option( ENABLE_PETSC "Enables PETSC" OFF )
 ### LAI SETUP ###
 
 set( supported_LAI Trilinos Hypre Petsc )
-set( GEOSX_LA_INTERFACE "Trilinos" CACHE STRING "Linear algebra interface to use in solvers" )
+set( GEOSX_LA_INTERFACE "Hypre" CACHE STRING "Linear algebra interface to use in solvers" )
 message( STATUS "GEOSX_LA_INTERFACE = ${GEOSX_LA_INTERFACE}" )
 
 if( NOT ( GEOSX_LA_INTERFACE IN_LIST supported_LAI ) )
