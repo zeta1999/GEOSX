@@ -166,7 +166,7 @@ public:
              m_phaseDensity[k][q],
              m_dPhaseDensity_dPressure[k][q],
              m_dPhaseDensity_dTemperature[k][q],
-             m_dPhaseFraction_dGlobalCompFraction[k][q],
+             m_dPhaseDensity_dGlobalCompFraction[k][q],
              m_phaseViscosity[k][q],
              m_dPhaseViscosity_dPressure[k][q],
              m_dPhaseViscosity_dTemperature[k][q],
@@ -197,13 +197,14 @@ public:
 
   virtual ~MultiPhaseMultiComponentFluid() override;
 
-  virtual void DeliverClone( string const & name,
-                             Group * const parent,
-                             std::unique_ptr< ConstitutiveBase > & clone ) const override;
+  virtual std::unique_ptr< ConstitutiveBase >
+  deliverClone( string const & name,
+                Group * const parent ) const override;
+
 
   static std::string CatalogName() { return dataRepository::keys::multiPhaseMultiComponentFluid; }
 
-  virtual string GetCatalogName() override { return CatalogName(); }
+  virtual string getCatalogName() const override { return CatalogName(); }
 
   /// Type of kernel wrapper for in-kernel update
   using KernelWrapper = MultiPhaseMultiComponentFluidUpdate;
