@@ -33,6 +33,8 @@ namespace geosx
 namespace CompositionalMultiphaseWellKernels
 {
 
+static constexpr real64 minDensForDivision = 1e-10;
+
 /******************************** ControlEquationHelper ********************************/
 
 struct ControlEquationHelper
@@ -1242,7 +1244,7 @@ struct SolutionScalingKernel
           arrayView2d< real64 const > const & dWellElemCompDens,
           real64 const maxCompFracChange )
   {
-    real64 constexpr eps = 1e-10;
+    real64 constexpr eps = minDensForDivision;
 
     RAJA::ReduceMin< REDUCE_POLICY, real64 > minVal( 1.0 );
 
@@ -1302,6 +1304,8 @@ struct SolutionCheckKernel
           integer const allowCompDensChopping,
           real64 const scalingFactor )
   {
+    real64 constexpr eps = minDensForDivision;
+
     RAJA::ReduceMin< REDUCE_POLICY, localIndex > minVal( 1 );
 
     forAll< POLICY >( wellElemDofNumber.size(), [=] GEOSX_HOST_DEVICE ( localIndex const iwelem )
@@ -1320,7 +1324,8 @@ struct SolutionCheckKernel
         }
 
         // if component density is not allowed, the time step fails if a component density is negative
-        // otherwise, negative component densities will be chopped (i.e., set to zero in ApplySystemSolution)
+        // otherwise, we just check that the total density is positive, and negative component densities
+        // will be chopped (i.e., set to zero) in ApplySystemSolution
         if( !allowCompDensChopping )
         {
           for( localIndex ic = 0; ic < numComponents; ++ic )
@@ -1345,7 +1350,7 @@ struct SolutionCheckKernel
                                    + scalingFactor * localSolution[lid];
             totalDens += (newDens > 0.0) ? newDens : 0.0;
           }
-          if( totalDens < 1e-6 )
+          if( totalDens < eps )
           {
             minVal.min( 0 );
           }

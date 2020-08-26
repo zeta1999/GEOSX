@@ -258,8 +258,11 @@ void DomainPartition::SetupCommunications( bool use_nonblocking )
 
   CommunicationTools::FindGhosts( meshLevel, m_neighbors, use_nonblocking );
 
+
   faceManager->SortAllFaceNodes( nodeManager, meshLevel.getElemManager() );
-  faceManager->computeGeometry( nodeManager );
+  
+  //faceManager->computeGeometry( nodeManager );
+
 }
 
 void DomainPartition::AddNeighbors( const unsigned int idim,

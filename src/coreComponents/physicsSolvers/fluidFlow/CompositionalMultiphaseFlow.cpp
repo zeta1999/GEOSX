@@ -41,6 +41,8 @@ using namespace dataRepository;
 using namespace constitutive;
 using namespace CompositionalMultiphaseFlowKernels;
 
+static constexpr real64 minDensForDivision = 1e-10;
+
 CompositionalMultiphaseFlow::CompositionalMultiphaseFlow( const string & name,
                                                           Group * const parent )
   :
@@ -49,7 +51,7 @@ CompositionalMultiphaseFlow::CompositionalMultiphaseFlow( const string & name,
   m_numComponents( 0 ),
   m_capPressureFlag( 0 ),
   m_maxCompFracChange( 1.0 ),
-  m_minScalingFactor( 0.1 ),
+  m_minScalingFactor( 0.01 ),
   m_allowCompDensChopping( 1 )
 {
 //START_SPHINX_INCLUDE_00
@@ -1232,7 +1234,7 @@ real64 CompositionalMultiphaseFlow::ScalingForSystemSolution( DomainPartition co
     return 1.0;
   }
 
-  real64 constexpr eps = 1e-10;
+  real64 constexpr eps = minDensForDivision;
   real64 const maxCompFracChange = m_maxCompFracChange;
 
   localIndex const NC = m_numComponents;
@@ -1292,7 +1294,7 @@ real64 CompositionalMultiphaseFlow::ScalingForSystemSolution( DomainPartition co
     }
   } );
 
-  return LvArray::max( MpiWrapper::Min( scalingFactor, MPI_COMM_GEOSX ), m_minScalingFactor );
+  return LvArray::math::max( MpiWrapper::Min( scalingFactor, MPI_COMM_GEOSX ), m_minScalingFactor );
 }
 
 
@@ -1301,6 +1303,8 @@ bool CompositionalMultiphaseFlow::CheckSystemSolution( DomainPartition const & d
                                                        arrayView1d< real64 const > const & localSolution,
                                                        real64 const scalingFactor )
 {
+  real64 constexpr eps = minDensForDivision;
+
   localIndex const NC = m_numComponents;
   integer const allowCompDensChopping = m_allowCompDensChopping;
 
@@ -1332,8 +1336,9 @@ bool CompositionalMultiphaseFlow::CheckSystemSolution( DomainPartition const & d
           check.min( newPres >= 0.0 );
         }
 
-        // if component density is not allowed, the time step fails if a component density is negative
-        // otherwise, negative component densities will be chopped (i.e., set to zero in ApplySystemSolution)
+        // if component density chopping is not allowed, the time step fails if a component density is negative
+        // otherwise, we just check that the total density is positive, and negative component densities
+        // will be chopped (i.e., set to zero) in ApplySystemSolution)
         if( !allowCompDensChopping )
         {
           for( localIndex ic = 0; ic < NC; ++ic )
@@ -1350,11 +1355,7 @@ bool CompositionalMultiphaseFlow::CheckSystemSolution( DomainPartition const & d
             real64 const newDens = compDens[ei][ic] + dCompDens[ei][ic] + scalingFactor * localSolution[localRow + ic + 1];
             totalDens += (newDens > 0.0) ? newDens : 0.0;
           }
-          if( totalDens < 1e-6 )
-          {
-            std::cout << "flow == wrong total dens = " << totalDens << std::endl;
-          }
-          check.min( totalDens >= 1e-6 );
+          check.min( totalDens >= eps );
         }
       }
     } );

@@ -684,17 +684,18 @@ void FaceManager::SortAllFaceNodes( NodeManager const * const nodeManager,
 {
   GEOSX_MARK_FUNCTION;
 
-  arrayView2d< localIndex const > const & elemRegionList = elementRegionList();
-  arrayView2d< localIndex const > const & elemSubRegionList = elementSubRegionList();
-  arrayView2d< localIndex const > const & elemList = elementList();
+  //arrayView2d< localIndex const > const & elemRegionList = elementRegionList();
+  //arrayView2d< localIndex const > const & elemSubRegionList = elementSubRegionList();
+  //arrayView2d< localIndex const > const & elemList = elementList();
   arrayView2d< real64 const, nodes::REFERENCE_POSITION_USD > const & X = nodeManager->referencePosition();
 
-  const indexType max_face_nodes = getMaxFaceNodes();
-  GEOSX_ERROR_IF( max_face_nodes >= MAX_FACE_NODES, "More nodes on a face than expected!" );
+  //const indexType max_face_nodes = getMaxFaceNodes();
+  //GEOSX_ERROR_IF( max_face_nodes >= MAX_FACE_NODES, "More nodes on a face than expected!" );
 
   elemManager->forElementSubRegions< CellElementSubRegion >( [&] ( CellElementSubRegion const & subRegion )
   { subRegion.calculateElementCenters( X ); } );
 
+  /*
   ArrayOfArraysView< localIndex > const & faceToNodeMap = nodeList().toView();
 
   forAll< parallelHostPolicy >( size(), [&]( localIndex const kf )
@@ -704,6 +705,7 @@ void FaceManager::SortAllFaceNodes( NodeManager const * const nodeManager,
     const localIndex numFaceNodes = faceToNodeMap.sizeOfArray( kf );
     SortFaceNodes( X, subRegion->getElementCenter()[ elemList( kf, 0 ) ], faceToNodeMap[ kf ], numFaceNodes );
   } );
+  */
 }
 
 void FaceManager::SortFaceNodes( arrayView2d< real64 const, nodes::REFERENCE_POSITION_USD > const & X,

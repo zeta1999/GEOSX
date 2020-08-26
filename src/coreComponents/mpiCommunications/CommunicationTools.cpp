@@ -745,22 +745,24 @@ void CommunicationTools::FindGhosts( MeshLevel & meshLevel,
 
   nodeManager.FixUpDownMaps( false );
   verifyGhostingConsistency( nodeManager, neighbors );
-  //edgeManager.FixUpDownMaps( false );
-  //verifyGhostingConsistency( edgeManager, neighbors );
+  edgeManager.FixUpDownMaps( false );
+  verifyGhostingConsistency( edgeManager, neighbors );
   faceManager.FixUpDownMaps( false );
   verifyGhostingConsistency( faceManager, neighbors );
+  
   elemManager.forElementSubRegions< ElementSubRegionBase >( [&]( ElementSubRegionBase & subRegion )
   {
     subRegion.FixUpDownMaps( false );
     verifyGhostingConsistency( subRegion, neighbors );
   } );
-
+  
   removeUnusedNeighbors( nodeManager, edgeManager, faceManager, elemManager, neighbors );
-
+  
   nodeManager.CompressRelationMaps();
-  //edgeManager.compressRelationMaps();
-  faceManager.compressRelationMaps();
 
+  //edgeManager.compressRelationMaps();
+  //faceManager.compressRelationMaps();
+  
   CommunicationTools::releaseCommID( commID );
 }
 
