@@ -142,9 +142,9 @@
                                         { 386431, 3262250, -2200.15 } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector1_perf1"
-                     distanceFromHead="205"/> 
+                     distanceFromHead="200"/> 
         <Perforation name="injector1_perf2"
                      distanceFromHead="179"/>
         <Perforation name="injector1_perf3"
@@ -159,9 +159,9 @@
                                         { 394519, 3262820, -2170.15 } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector2_perf1"
-                     distanceFromHead="175"/> 
+                     distanceFromHead="170"/> 
         <Perforation name="injector2_perf2"
                      distanceFromHead="153"/>
         <Perforation name="injector2_perf3"
@@ -176,7 +176,7 @@
                                         { 390873, 3262620, -2200.15 } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector3_perf1"
                      distanceFromHead="205"/>
         <Perforation name="injector3_perf2"
@@ -193,7 +193,7 @@
                                         { 390561, 3265500, -2200.15 } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector4_perf1"
                      distanceFromHead="205"/>
         <Perforation name="injector4_perf2"
@@ -210,7 +210,7 @@
                                         {388343,  3272320, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector5_perf1"
                      distanceFromHead="300"/>
         <Perforation name="injector5_perf2"
@@ -227,7 +227,7 @@
                                         {387222, 3273310, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector6_perf1"
                      distanceFromHead="300"/>
         <Perforation name="injector6_perf2"
@@ -244,7 +244,7 @@
                                         {395651, 3271910, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector7_perf1"
                      distanceFromHead="300"/>
         <Perforation name="injector7_perf2"
@@ -261,7 +261,7 @@
                                         {391256, 3272510, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector8_perf1"
                      distanceFromHead="300"/>
         <Perforation name="injector8_perf2"
@@ -278,7 +278,7 @@
                                         {390237, 3270320, -2000.69  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector9_perf1"
                      distanceFromHead="300"/>
         <Perforation name="injector9_perf2"
@@ -295,7 +295,7 @@
                                         {388461, 3267730, -2081  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector10_perf1"
                      distanceFromHead="300"/>
         <Perforation name="injector10_perf2"
@@ -312,7 +312,7 @@
                                         { 394329, 3267380, -2081  } }"
                   polylineSegmentConn="{ {0, 1} }"
                   radius="0.1"
-                  numElementsPerSegment="30">
+                  numElementsPerSegment="10">
         <Perforation name="injector11_perf1"
                      distanceFromHead="300"/>
         <Perforation name="injector11_perf2"
@@ -333,10 +333,10 @@
     <!-- This event is applied every 1.0s.  The targetExactTimestep
     flag allows this event to request a dt modification to match an
     integer multiple of the timeFrequency. -->
-    <PeriodicEvent name="vtk"
-                   timeFrequency="1e7"
-                   targetExactTimestep="1"
-                   target="/Outputs/vtkOutput" />
+    <!-- <PeriodicEvent name="vtk" -->
+    <!--                timeFrequency="1e7" -->
+    <!--                targetExactTimestep="1" -->
+    <!--                target="/Outputs/vtkOutput" /> -->
 
     <PeriodicEvent name="restarts"
                    timeFrequency="1e99"
@@ -440,7 +440,7 @@
                setNames="{all}"
                objectPath="ElementRegions/reservoir/Reservoir_TETRA"
                fieldName="pressure"
-               scale="1"
+               scale="1" 	       
 	       functionName="initialPressureFunction"/>
 
     <FieldSpecification name="initialComposition_co2"
@@ -465,14 +465,14 @@
 
     <TableFunction name="initialPressureFunction"
                    inputVarNames="{elementCenter}"
-    		   coordinateFiles="{xLin.geos,yLin.geos,zLin.geos}"
-    		   voxelFile="pres.geos"
-    		   interpolation="linear" />
+		   coordinateFiles="{xLin.geos,yLin.geos,zLin.geos}"
+		   voxelFile="pres.geos"
+		   interpolation="linear" />
     
   </Functions>
 
   <Outputs>
-      <VTK name="vtkOutput"/>
+      <!-- <VTK name="vtkOutput"/> -->
       <Restart name="sidreRestart"/>
   </Outputs>
 </Problem>
