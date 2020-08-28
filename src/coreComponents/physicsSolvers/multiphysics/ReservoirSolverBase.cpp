@@ -335,6 +335,9 @@ real64 ReservoirSolverBase::CalculateResidualNorm( DomainPartition const & domai
   // compute norm of well equations residuals
   real64 const wellResidualNorm      = m_wellSolver->CalculateResidualNorm( domain, dofManager, localRhs );
 
+  GEOSX_LOG_LEVEL_RANK_0( 1, "Reservoir residual norm: " << reservoirResidualNorm
+                          << "; Well residual norm: " << wellResidualNorm );
+  
   return sqrt( reservoirResidualNorm * reservoirResidualNorm + wellResidualNorm * wellResidualNorm );
 }
 

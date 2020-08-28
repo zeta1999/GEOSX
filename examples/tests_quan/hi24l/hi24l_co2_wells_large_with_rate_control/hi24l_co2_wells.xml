@@ -20,12 +20,12 @@
                                wellRegion9,
                                wellRegion10,
                                wellRegion11}">
-      <NonlinearSolverParameters newtonTol="1.0e-6"
-				 lineSearchAction="0"
-				 dtIncIterLimit="0.15"
+      <NonlinearSolverParameters newtonTol="1.0e-5"
+				 lineSearchAction="1"
+				 dtIncIterLimit="0.45"
 				 dtCutIterLimit="0.99"
   			         maxTimeStepCuts="10"
-                                 newtonMaxIter="40"/>
+                                 newtonMaxIter="20"/>
       <LinearSolverParameters solverType="fgmres"
 			      preconditionerType="mgr"
                               logLevel="0"/>
@@ -38,7 +38,7 @@
                                  solidNames="{rock}"
                                  relPermNames="{relperm}"
                                  temperature="368.15"
-                                 maxCompFractionChange="0.5"
+                                 maxCompFractionChange="0.2"
                                  useMass="1">
     </CompositionalMultiphaseFlow>
 
@@ -57,7 +57,7 @@
                                  fluidNames="{fluid1}"
                                  relPermNames="{relperm}"
                                  wellTemperature="368.15"
-                                 maxCompFractionChange="0.8"
+                                 maxCompFractionChange="0.2"
                                  useMass="1">
         <WellControls name="wellControls1"
                       type="injector"
@@ -182,7 +182,7 @@
         <Perforation name="injector3_perf2"
                      distanceFromHead="172"/>
         <Perforation name="injector3_perf3"
-                     distanceFromHead="129"/>
+                     distanceFromHead="150"/> 
     </InternalWell>
  
     <InternalWell name="well_injector4"
@@ -199,7 +199,7 @@
         <Perforation name="injector4_perf2"
                      distanceFromHead="172"/>
         <Perforation name="injector4_perf3"
-                     distanceFromHead="129"/>
+                     distanceFromHead="149"/> 
     </InternalWell>
 
     <InternalWell name="well_injector5"
@@ -284,7 +284,7 @@
         <Perforation name="injector9_perf2"
                      distanceFromHead="249"/>
         <Perforation name="injector9_perf3"
-                     distanceFromHead="198"/>
+                     distanceFromHead="211"/> 
     </InternalWell>
 
     <InternalWell name="well_injector10"
