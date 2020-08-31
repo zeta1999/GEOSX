@@ -7,7 +7,7 @@
                flowSolverName="compositionalMultiphaseFlow"
                wellSolverName="compositionalMultiphaseWell"
                logLevel="1"
-	       initialDt="1e2"
+               initialDt="1e2"
                targetRegions="{reservoir,
                                wellRegion1,
                                wellRegion2,
@@ -21,13 +21,13 @@
                                wellRegion10,
                                wellRegion11}">
       <NonlinearSolverParameters newtonTol="1.0e-5"
-				 lineSearchAction="1"
-				 dtIncIterLimit="0.45"
-				 dtCutIterLimit="0.99"
-  			         maxTimeStepCuts="10"
+                                 lineSearchAction="1"
+                                 dtIncIterLimit="0.45"
+                                 dtCutIterLimit="0.99"
+                                 maxTimeStepCuts="10"
                                  newtonMaxIter="20"/>
       <LinearSolverParameters solverType="fgmres"
-			      preconditionerType="mgr"
+                              preconditionerType="mgr"
                               logLevel="0"/>
     </CompositionalMultiphaseReservoir>
     
@@ -46,14 +46,14 @@
                                  targetRegions="{wellRegion1,
                                                  wellRegion2,
                                                  wellRegion3,
-						 wellRegion4,
+                                                 wellRegion4,
                                                  wellRegion5,
                                                  wellRegion6,
                                                  wellRegion7,
                                                  wellRegion8,
                                                  wellRegion9,
-						 wellRegion10,
-						 wellRegion11}"
+                                                 wellRegion10,
+                                                 wellRegion11}"
                                  fluidNames="{fluid1}"
                                  relPermNames="{relperm}"
                                  wellTemperature="368.15"
@@ -64,67 +64,67 @@
                       control="liquidRate"
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls2"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls3"
                       type="injector"
                       control="liquidRate" 
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls4"
                       type="injector"
                       control="liquidRate" 
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls5"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls6"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls7"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls8"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>	      
+                      injectionStream="{0.995, 0.005}"/>              
         <WellControls name="wellControls9"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls10"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls11"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
                       targetRate="3e1"
-              	      injectionStream="{0.995, 0.005}"/>
+                      injectionStream="{0.995, 0.005}"/>
     </CompositionalMultiphaseWell>
 
     
@@ -324,19 +324,21 @@
   </Mesh>
 
 
-  <Events maxTime="2e7">
-    <!-- This event is applied every cycle, and overrides the
-    solver time-step request -->
-    <PeriodicEvent name="solverApplications"
-                   target="/Solvers/reservoirSystem" />
+  <Events maxTime="4e7">
 
-    <!-- This event is applied every 1.0s.  The targetExactTimestep
-    flag allows this event to request a dt modification to match an
-    integer multiple of the timeFrequency. -->
+    <PeriodicEvent name="silo"
+                   timeFrequency="5e6"
+                   targetExactTimestep="1"
+                   target="/Outputs/siloOutput" />
+
     <!-- <PeriodicEvent name="vtk" -->
-    <!--                timeFrequency="1e7" -->
+    <!--                timeFrequency="5e6" -->
     <!--                targetExactTimestep="1" -->
     <!--                target="/Outputs/vtkOutput" /> -->
+    
+    <PeriodicEvent name="solverApplications"
+                   maxEventDt="1.728e5"
+                   target="/Solvers/reservoirSystem" />
 
     <PeriodicEvent name="restarts"
                    timeFrequency="1e99"
@@ -386,11 +388,11 @@
 
   <Constitutive>
     <MultiPhaseMultiComponentFluid name="fluid1"
-				   phaseNames="{gas, water}"
-				   componentNames="{co2, water}"
+                                   phaseNames="{gas, water}"
+                                   componentNames="{co2, water}"
                                    componentMolarWeight="{44e-3, 18e-3}"
-				   phasePVTParaFiles="{pvtgas.txt, pvtliquid.txt}"
-				   flashModelParaFile="co2flash.txt"/>
+                                   phasePVTParaFiles="{pvtgas.txt, pvtliquid.txt}"
+                                   flashModelParaFile="co2flash.txt"/>
     <PoreVolumeCompressibleSolid name="rock"
                                  referencePressure="0.0"
                                  compressibility="1e-9"/>
@@ -440,8 +442,8 @@
                setNames="{all}"
                objectPath="ElementRegions/reservoir/Reservoir_TETRA"
                fieldName="pressure"
-               scale="1" 	       
-	       functionName="initialPressureFunction"/>
+               scale="1"               
+               functionName="initialPressureFunction"/>
 
     <FieldSpecification name="initialComposition_co2"
                initialCondition="1"
@@ -465,14 +467,15 @@
 
     <TableFunction name="initialPressureFunction"
                    inputVarNames="{elementCenter}"
-		   coordinateFiles="{xLin.geos,yLin.geos,zLin.geos}"
-		   voxelFile="pres.geos"
-		   interpolation="linear" />
+                   coordinateFiles="{xLin.geos,yLin.geos,zLin.geos}"
+                   voxelFile="pres.geos"
+                   interpolation="linear" />
     
   </Functions>
 
   <Outputs>
-      <!-- <VTK name="vtkOutput"/> -->
+      <!-- <VTK name="vtkOutput"/>      -->
+      <Silo name="siloOutput"/> 
       <Restart name="sidreRestart"/>
   </Outputs>
 </Problem>
