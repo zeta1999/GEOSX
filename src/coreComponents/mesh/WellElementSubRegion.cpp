@@ -671,6 +671,11 @@ void WellElementSubRegion::ConstructSubRegionLocalElementMaps( MeshLevel & mesh,
 
   resize( localElems.size() );
 
+  if( size() )
+  {
+    std::cout << "Rank #" << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << " owns " << size() << " elements" << std::endl;
+  }
+    
   // create local elem numbering
 
   // local well elem ordering
@@ -680,6 +685,7 @@ void WellElementSubRegion::ConstructSubRegionLocalElementMaps( MeshLevel & mesh,
   {
     // create a global *elemManager* index
     m_localToGlobalMap[iwelemLocal++] = elemOffsetGlobal + iwelemGlobal;
+    std::cout << "Rank #" << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << " owns element #" << elemOffsetGlobal + iwelemGlobal << std::endl;
   }
   ConstructGlobalToLocalMap();
 
@@ -699,15 +705,18 @@ void WellElementSubRegion::ConstructSubRegionLocalElementMaps( MeshLevel & mesh,
     }
     else
     {
+      std::cout << "Rank #" << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ": next element (global) of " << iwelemLocal << " is " << ielemNextGlobal << std::endl;
       m_nextWellElementIndexGlobal[iwelemLocal] = ielemNextGlobal; // wellhead
 
       if( globalToLocalMap().count( ielemNextGlobal ) > 0 )
       {
         m_nextWellElementIndex[iwelemLocal] = globalToLocalMap( ielemNextGlobal );
+        std::cout << "Rank #" << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ": next element (local) of " << iwelemLocal << " is " << m_nextWellElementIndex[iwelemLocal] << std::endl;
       }
       else
       {
         m_nextWellElementIndex[iwelemLocal] = -2; // remote elem
+        std::cout << "Rank #" << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ": next element (local) of " << iwelemLocal << " is " << m_nextWellElementIndex[iwelemLocal] << std::endl;
       }
     }
 
@@ -725,6 +734,13 @@ void WellElementSubRegion::ConstructSubRegionLocalElementMaps( MeshLevel & mesh,
     globalIndex const inodeTopGlobal    = nodeOffsetGlobal + elemToNodesGlobal[iwelemGlobal][InternalWellGenerator::NodeLocation::TOP];
     globalIndex const inodeBottomGlobal = nodeOffsetGlobal + elemToNodesGlobal[iwelemGlobal][InternalWellGenerator::NodeLocation::BOTTOM];
 
+    std::cout << "Rank #" << MpiWrapper::Comm_rank( MPI_COMM_GEOSX )
+	      << ": element (global) " << iwelemGlobal
+	      << " (local) " << iwelemLocal 
+              << " inodeTopGlobal = " << inodeTopGlobal
+              << " inodeBottomGlobal = " << inodeBottomGlobal
+              << std::endl; 
+    
     // then get the local node indices in nodeManager ordering
     localIndex const inodeTopLocal    = nodeManager->globalToLocalMap( inodeTopGlobal );
     localIndex const inodeBottomLocal = nodeManager->globalToLocalMap( inodeBottomGlobal );
