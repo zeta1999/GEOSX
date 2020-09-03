@@ -2,11 +2,11 @@
  * ------------------------------------------------------------------------------------------------------------
  * SPDX-License-Identifier: LGPL-2.1-only
  *
- * Copyright (c) 2018-2019 Lawrence Livermore National Security LLC
- * Copyright (c) 2018-2019 The Board of Trustees of the Leland Stanford Junior University
- * Copyright (c) 2018-2019 Total, S.A
+ * Copyright (c) 2018-2020 Lawrence Livermore National Security LLC
+ * Copyright (c) 2018-2020 The Board of Trustees of the Leland Stanford Junior University
+ * Copyright (c) 2018-2020 Total, S.A
  * Copyright (c) 2019-     GEOSX Contributors
- * All right reserved
+ * All rights reserved
  *
  * See top level LICENSE, COPYRIGHT, CONTRIBUTORS, NOTICE, and ACKNOWLEDGEMENTS files for details.
  * ------------------------------------------------------------------------------------------------------------
@@ -182,15 +182,26 @@ public:
   {
     std::unique_ptr< WrapperBase >
     clonedWrapper = std::make_unique< Wrapper< T > >( name, parent, this->m_data );
-    clonedWrapper->CopyWrapperAttributes( *this );
+    clonedWrapper->copyWrapperAttributes( *this );
 
     return clonedWrapper;
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////////////////
-  virtual void CopyWrapperAttributes( WrapperBase const & source ) override
+  virtual void copyWrapper( WrapperBase const & source ) override
   {
-    WrapperBase::CopyWrapperAttributes( source );
+    GEOSX_ERROR_IF( source.getName() != this->m_name, "Tried to clone wrapper of with different name" );
+    WrapperBase::copyWrapperAttributes( source );
+    Wrapper< T > const & castedSource = *cast( &source );
+    m_ownsData = castedSource.m_ownsData;
+    m_default = castedSource.m_default;
+    copyData( source );
+
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+  virtual void copyWrapperAttributes( WrapperBase const & source ) override
+  {
+    WrapperBase::copyWrapperAttributes( source );
     Wrapper< T > const & castedSource = *cast( &source );
     m_ownsData = castedSource.m_ownsData;
     m_default = castedSource.m_default;
@@ -254,17 +265,26 @@ public:
 
   ///@}
 
+  /// @copydoc geosx::WrapperBase::getHistoryMetadata
+  virtual
+  HistoryMetadata getHistoryMetadata( localIndex const packCount = -1 ) const override final
+  {
+    return geosx::getHistoryMetadata( getName(), this->referenceAsView( ), packCount );
+  }
+
   /**
    * @name Packing/unpacking methods.
    */
   ///@{
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
+  /// @copydoc geosx::WrapperBase::isPackable
   virtual
   bool isPackable( bool onDevice ) const override
   {
     if( onDevice )
     {
+      // this isn't accurate if array/arraview return false for this, which I think they do
       return bufferOps::can_memcpy< T >;
     }
     else
@@ -273,21 +293,23 @@ public:
     }
   }
 
-  /**
-   * @brief function to pack T
-   * @param buffer the buffer in which to pack T
-   * @param[in] onDevice    whether to use device-based packing functions
-   *                         (buffer must be either pinned or a device pointer)
-   * @return number of packed bytes.
-   */
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+  /// @copydoc geosx::WrapperBase::Pack
   virtual
-  localIndex Pack( buffer_unit_type * & buffer, bool onDevice ) const override
+  localIndex Pack( buffer_unit_type * & buffer, bool withMetadata, bool onDevice ) const override final
   {
     localIndex packedSize = 0;
-    packedSize += bufferOps::Pack< true >( buffer, this->getName() );
+    if( withMetadata ) packedSize += bufferOps::Pack< true >( buffer, this->getName() );
     if( onDevice )
     {
-      packedSize += wrapperHelpers::PackDevice< true >( buffer, reference() );
+      if( withMetadata )
+      {
+        packedSize += wrapperHelpers::PackDevice< true >( buffer, reference() );
+      }
+      else
+      {
+        packedSize += wrapperHelpers::PackDataDevice< true >( buffer, reference() );
+      }
     }
     else
     {
@@ -297,16 +319,24 @@ public:
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
+  /// @copydoc geosx::WrapperBase::PackByIndex
   virtual
-  localIndex PackByIndex( buffer_unit_type * & buffer, arrayView1d< localIndex const > const & packList, bool onDevice ) const override
+  localIndex PackByIndex( buffer_unit_type * & buffer, arrayView1d< localIndex const > const & packList, bool withMetadata, bool onDevice ) const override final
   {
     localIndex packedSize = 0;
     if( sizedFromParent() == 1 )
     {
-      packedSize += bufferOps::Pack< true >( buffer, this->getName() );
+      if( withMetadata ) packedSize += bufferOps::Pack< true >( buffer, this->getName() );
       if( onDevice )
       {
-        packedSize += wrapperHelpers::PackByIndexDevice< true >( buffer, reference(), packList );
+        if( withMetadata )
+        {
+          packedSize += wrapperHelpers::PackByIndexDevice< true >( buffer, reference(), packList );
+        }
+        else
+        {
+          packedSize += wrapperHelpers::PackDataByIndexDevice< true >( buffer, reference(), packList );
+        }
       }
       else
       {
@@ -317,15 +347,23 @@ public:
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
+  /// @copydoc geosx::WrapperBase::PackSize
   virtual
-  localIndex PackSize( bool onDevice ) const override
+  localIndex PackSize( bool withMetadata, bool onDevice ) const override final
   {
     buffer_unit_type * buffer = nullptr;
     localIndex packedSize = 0;
-    packedSize += bufferOps::Pack< false >( buffer, this->getName() );
+    if( withMetadata ) packedSize += bufferOps::Pack< false >( buffer, this->getName() );
     if( onDevice )
     {
-      packedSize += wrapperHelpers::PackDevice< false >( buffer, reference() );
+      if( withMetadata )
+      {
+        packedSize += wrapperHelpers::PackDevice< false >( buffer, reference() );
+      }
+      else
+      {
+        packedSize += wrapperHelpers::PackDataDevice< false >( buffer, reference() );
+      }
     }
     else
     {
@@ -335,17 +373,25 @@ public:
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
+  /// @copydoc geosx::WrapperBase::PackByIndexSize
   virtual
-  localIndex PackByIndexSize( arrayView1d< localIndex const > const & packList, bool onDevice ) const override
+  localIndex PackByIndexSize( arrayView1d< localIndex const > const & packList, bool withMetadata, bool onDevice ) const override final
   {
     localIndex packedSize = 0;
     buffer_unit_type * buffer = nullptr;
     if( sizedFromParent() == 1 )
     {
-      packedSize += bufferOps::Pack< false >( buffer, this->getName() );
+      if( withMetadata ) packedSize += bufferOps::Pack< false >( buffer, this->getName() );
       if( onDevice )
       {
-        packedSize += wrapperHelpers::PackByIndexDevice< false >( buffer, reference(), packList );
+        if( withMetadata )
+        {
+          packedSize += wrapperHelpers::PackByIndexDevice< false >( buffer, reference(), packList );
+        }
+        else
+        {
+          packedSize += wrapperHelpers::PackDataByIndexDevice< false >( buffer, reference(), packList );
+        }
       }
       else
       {
@@ -356,16 +402,27 @@ public:
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
+  /// @copydoc geosx::WrapperBase::Unpack
   virtual
-  localIndex Unpack( buffer_unit_type const * & buffer, bool onDevice ) override
+  localIndex Unpack( buffer_unit_type const * & buffer, bool withMetadata, bool onDevice ) override final
   {
     localIndex unpackedSize = 0;
-    string name;
-    unpackedSize += bufferOps::Unpack( buffer, name );
-    GEOSX_ERROR_IF( name != this->getName(), "buffer unpack leads to wrapper names that don't match" );
+    if( withMetadata )
+    {
+      string name;
+      unpackedSize += bufferOps::Unpack( buffer, name );
+      GEOSX_ERROR_IF( name != this->getName(), "buffer unpack leads to wrapper names that don't match" );
+    }
     if( onDevice )
     {
-      unpackedSize += wrapperHelpers::UnpackDevice( buffer, referenceAsView() );
+      if( withMetadata )
+      {
+        unpackedSize += wrapperHelpers::UnpackDevice( buffer, referenceAsView() );
+      }
+      else
+      {
+        unpackedSize += wrapperHelpers::UnpackDataDevice( buffer, referenceAsView() );
+      }
     }
     else
     {
@@ -375,18 +432,29 @@ public:
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
+  /// @copydoc geosx::WrapperBase::UnpackByIndex
   virtual
-  localIndex UnpackByIndex( buffer_unit_type const * & buffer, arrayView1d< localIndex const > const & unpackIndices, bool onDevice ) override
+  localIndex UnpackByIndex( buffer_unit_type const * & buffer, arrayView1d< localIndex const > const & unpackIndices, bool withMetadata, bool onDevice ) override final
   {
     localIndex unpackedSize = 0;
     if( sizedFromParent()==1 )
     {
-      string name;
-      unpackedSize += bufferOps::Unpack( buffer, name );
-      GEOSX_ERROR_IF( name != this->getName(), "buffer unpack leads to wrapper names that don't match" );
+      if( withMetadata )
+      {
+        string name;
+        unpackedSize += bufferOps::Unpack( buffer, name );
+        GEOSX_ERROR_IF( name != this->getName(), "buffer unpack leads to wrapper names that don't match" );
+      }
       if( onDevice )
       {
-        unpackedSize += wrapperHelpers::UnpackByIndexDevice( buffer, referenceAsView(), unpackIndices );
+        if( withMetadata )
+        {
+          unpackedSize += wrapperHelpers::UnpackByIndexDevice( buffer, referenceAsView(), unpackIndices );
+        }
+        else
+        {
+          unpackedSize += wrapperHelpers::UnpackDataByIndexDevice( buffer, referenceAsView(), unpackIndices );
+        }
       }
       else
       {
@@ -463,6 +531,21 @@ public:
     static void copy( U const &, localIndex const, localIndex const )
     {}
 
+    template< typename U=T >
+    static
+    typename std::enable_if< traits::hasCopyAssignmentOp< U >, void >::type
+    copyData( U & destinationData, U const & sourceData )
+    {
+      destinationData = sourceData;
+    }
+
+    template< typename U=T >
+    static
+    typename std::enable_if< !traits::hasCopyAssignmentOp< U >, void >::type
+    copyData( U &, U const & )
+    {}
+
+
   };
   /// @endcond
 
@@ -474,6 +557,15 @@ public:
       copy_wrapper::copy( reference(), sourceIndex, destIndex );
     }
   }
+
+
+
+  virtual void copyData( WrapperBase const & source ) override
+  {
+    Wrapper< T > const & castedSource = *cast( &source );
+    copy_wrapper::copyData( *m_data, *castedSource.m_data );
+  }
+
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   virtual void move( LvArray::MemorySpace const space, bool const touch ) const override
