@@ -1,0 +1,276 @@
+<?xml version="1.0" ?>
+
+<Problem>
+  <Solvers>
+    <SinglePhaseHybridFVM
+      name="singlePhaseFlow"
+      discretization="singlePhaseTPFA"  
+      fluidNames="{ water }"
+      solidNames="{ rock }"
+      logLevel="1"
+      initialDt="1e5"
+      targetRegions="{reservoir}">
+      <NonlinearSolverParameters 
+        newtonTol="1.0e-6"
+        lineSearchAction="None"
+        newtonMaxIter="50"/>
+      <LinearSolverParameters
+        solverType="fgmres"
+        logLevel="1"
+        preconditionerType="mgr" 
+        krylovTol="1.0e-7"/>
+    </SinglePhaseHybridFVM>
+  </Solvers>
+  
+  <Mesh>
+    
+    <PAMELAMeshGenerator
+      name="CubeTetra"
+      file="../../../hi24l/mesh/HI24L_NN_NO_PPT.msh"/>
+
+  </Mesh>
+
+  <Geometry>
+    <Box name="sink1" xMin="386300, 3262100, -2200.15" xMax="386600, 3262400, -1990.15"/>
+    <Box name="sink2" xMin="394400, 3262700, -2200.15" xMax="394600, 3262900, -1990.15"/>
+    <Box name="sink3" xMin="390700, 3262500, -2200.15" xMax="390900, 3262700, -1990.15"/>
+    <Box name="sink4" xMin="390400, 3265400, -2200.15" xMax="390600, 3265600, -1990.15"/>
+    <Box name="sink5" xMin="388300, 3267600, -2081" xMax="388500, 3267800, -1777"/>
+    <Box name="sink6" xMin="394200, 3267200, -2081" xMax="394400, 3267400, -1777"/>
+    <Box name="sink7" xMin="386900, 3265500, -2081" xMax="387100, 3265700, -1777"/>
+    <Box name="source1" xMin="388200, 3272200, -2000.69" xMax="388400,  3272400, -1700.69"/>
+    <Box name="source2" xMin="387100, 3273200, -2000.69" xMax="387300, 3273400, -1700.69"/>
+    <Box name="source3" xMin="395500, 3271800, -2000.69" xMax="395700, 3272000, -1700.69"/>
+    <Box name="source4" xMin="391100, 3272400, -2000.69" xMax="391300, 3272600, -1700.69"/>
+    <Box name="source5" xMin="390100, 3270200, -2000.69" xMax="390300, 3270400, -1700.69"/>
+  </Geometry>
+  
+  <Events
+    maxTime="1e8">
+    <PeriodicEvent
+      name="solverApplications"
+      target="/Solvers/singlePhaseFlow" />
+
+    <PeriodicEvent
+      name="siloOutputs"
+      timeFrequency="1e7"
+      targetExactTimestep="1"
+      target="/Outputs/siloWellPump" />
+
+    <PeriodicEvent
+      name="vtkOutputs"
+      timeFrequency="1e7"
+      targetExactTimestep="1"
+      target="/Outputs/vtkWellPump" />
+    
+    <PeriodicEvent
+      name="restarts"
+      timeFrequency="1e99"
+      targetExactTimestep="0"
+      target="/Outputs/sidreRestart"
+      endTime="-1"/>
+  </Events>
+
+
+  <NumericalMethods>
+    <FiniteVolume>
+      <TwoPointFluxApproximation
+        name="singlePhaseTPFA"
+        fieldName="pressure"
+        coefficientName="permeability"/>
+    </FiniteVolume>
+  </NumericalMethods>
+
+
+  <ElementRegions>
+    <CellElementRegion
+      name="reservoir"
+      cellBlocks="{ Reservoir_TETRA }"
+      materialList="{ water, rock }"/>
+  </ElementRegions>
+
+  <Constitutive>
+    <CompressibleSinglePhaseFluid
+      name="water"
+      defaultDensity="1000"
+      defaultViscosity="0.001"
+      referencePressure="2e7"
+      referenceDensity="1000"
+      compressibility="1e-8"
+      referenceViscosity="0.001"
+      viscosibility="1e-12"/>
+    
+    <PoreVolumeCompressibleSolid
+      name="rock"
+      referencePressure="0.0"
+      compressibility="0.0"/>
+  </Constitutive>
+
+  <FieldSpecifications>
+
+    <FieldSpecification
+      name="Permx1"
+      component="0"
+      initialCondition="1"  
+      setNames="{ all }"
+      objectPath="ElementRegions/reservoir"
+      fieldName="permeability"
+      scale="1.0e-13"/>
+
+    <FieldSpecification
+      name="Permy1"
+      component="1"
+      initialCondition="1"
+      setNames="{ all }"
+      objectPath="ElementRegions/reservoir"
+      fieldName="permeability"
+      scale="1.0e-13"/>
+
+    <FieldSpecification
+      name="Permz1"
+      component="2"
+      initialCondition="1"
+      setNames="{ all }"
+      objectPath="ElementRegions/reservoir"
+      fieldName="permeability"
+      scale="1.0e-13"/>
+
+    <FieldSpecification
+      name="ReferencePorosity1"
+      initialCondition="1"
+      setNames="{ all }"
+      objectPath="ElementRegions/reservoir"
+      fieldName="referencePorosity"
+      scale="0.05"/>
+    
+    <FieldSpecification
+      name="initialPressure"
+      initialCondition="1"
+      setNames="{ all }"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="1"                
+      functionName="initialPressureFunctionElem"/>
+      <!-- scale="3e7"/> -->
+
+    <FieldSpecification
+      name="initialFacePressure"
+      initialCondition="1"
+      setNames="{ all }"
+      objectPath="faceManager"
+      fieldName="facePressure"
+      scale="1"                
+      functionName="initialPressureFunctionFace"/>
+      <!-- scale="3e7"/> -->
+
+    <FieldSpecification
+      name="sourceTerm1"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="6e7"
+      setNames="{ source1 }"/>
+
+    <FieldSpecification
+      name="sourceTerm2"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="6e7"
+      setNames="{ source2 }"/>
+
+    <FieldSpecification
+      name="sourceTerm3"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="6e7"
+      setNames="{ source3 }"/>
+
+    <FieldSpecification
+      name="sourceTerm4"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="6e7"
+      setNames="{ source4 }"/>
+
+    <FieldSpecification
+      name="sourceTerm5"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="6e7"
+      setNames="{ source5 }"/>
+
+    <FieldSpecification
+      name="sinkTerm1"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"          
+      scale="2e7"
+      setNames="{ sink1 }"/>
+
+    <FieldSpecification
+      name="sinkTerm2"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="2e7"
+      setNames="{ sink2 }"/>
+
+    <FieldSpecification
+      name="sinkTerm3"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="2e7"
+      setNames="{ sink3 }"/>
+
+    <FieldSpecification
+      name="sinkTerm4"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="2e7"
+      setNames="{ sink4 }"/>
+
+    <FieldSpecification
+      name="sinkTerm5"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="2e7"
+      setNames="{ sink5 }"/>
+
+    <FieldSpecification
+      name="sinkTerm6"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="2e7"
+      setNames="{ sink6 }"/>
+
+    <FieldSpecification
+      name="sinkTerm7"
+      objectPath="ElementRegions/reservoir"
+      fieldName="pressure"
+      scale="2e7"
+      setNames="{ sink7 }"/>
+    
+  </FieldSpecifications>
+
+  <Functions>
+
+    <TableFunction name="initialPressureFunctionElem"
+                   inputVarNames="{elementCenter}"
+                   coordinateFiles="{xLin.geos,yLin.geos,zLin.geos}"
+                   voxelFile="pres.geos"
+                   interpolation="linear" />
+    
+    <TableFunction name="initialPressureFunctionFace"
+                   inputVarNames="{faceCenter}"
+                   coordinateFiles="{xLin.geos,yLin.geos,zLin.geos}"
+                   voxelFile="pres.geos"
+                   interpolation="linear" />
+    
+  </Functions>
+  
+  <Outputs>
+    <VTK
+      name="vtkWellPump"/>
+    <Silo
+      name="siloWellPump"/>
+    <Restart
+      name="sidreRestart"/>
+  </Outputs>
+</Problem>

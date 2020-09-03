@@ -11,7 +11,7 @@
                                wellRegion1,
                                wellRegion9}">
       <NonlinearSolverParameters newtonTol="1.0e-5"
-                                 lineSearchAction="0"
+                                 lineSearchAction="None"
                                  maxTimeStepCuts="10"
                                  newtonMaxIter="40"/>
       <LinearSolverParameters solverType="fgmres"

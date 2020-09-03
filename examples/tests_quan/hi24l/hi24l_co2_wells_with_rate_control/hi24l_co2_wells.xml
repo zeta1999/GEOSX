@@ -21,7 +21,7 @@
                                wellRegion10,
                                wellRegion11}">
       <NonlinearSolverParameters newtonTol="1.0e-6"
-				 lineSearchAction="0"
+				 lineSearchAction="None"
 				 dtIncIterLimit="0.15"
 				 dtCutIterLimit="0.99"
   			         maxTimeStepCuts="10"

@@ -14,7 +14,7 @@
                                wellRegion2, 
                                wellRegion3}">
       <NonlinearSolverParameters newtonTol="1.0e-6"
-                                 lineSearchAction="1"
+                                 lineSearchAction="Attempt"
                                  newtonMaxIter="40"/>
       <LinearSolverParameters solverType="direct"
                               logLevel="1"/>

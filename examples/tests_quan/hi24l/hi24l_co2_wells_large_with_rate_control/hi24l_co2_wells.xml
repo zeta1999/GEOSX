@@ -19,9 +19,10 @@
                                wellRegion8,
                                wellRegion9,
                                wellRegion10,
-                               wellRegion11}">
+                               wellRegion11,
+                               wellRegion12}">
       <NonlinearSolverParameters newtonTol="1.0e-5"
-                                 lineSearchAction="1"
+                                 lineSearchAction="Attempt"
                                  dtIncIterLimit="0.45"
                                  dtCutIterLimit="0.99"
                                  maxTimeStepCuts="10"
@@ -53,7 +54,8 @@
                                                  wellRegion8,
                                                  wellRegion9,
                                                  wellRegion10,
-                                                 wellRegion11}"
+                                                 wellRegion11,
+                                                 wellRegion12}"
                                  fluidNames="{fluid1}"
                                  relPermNames="{relperm}"
                                  wellTemperature="368.15"
@@ -120,6 +122,12 @@
                       targetRate="3e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls11"
+                      type="injector"
+                      control="liquidRate"
+                      targetBHP="1e8"
+                      targetRate="3e1"
+                      injectionStream="{0.995, 0.005}"/>
+        <WellControls name="wellControls12"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
@@ -321,6 +329,23 @@
                      distanceFromHead="238"/>
     </InternalWell>
     
+    <InternalWell name="well_injector12"
+                  wellRegionName="wellRegion12"
+                  wellControlsName="wellControls12"
+                  meshName="CubeTetra"
+                  polylineNodeCoords="{ { 386998, 3265570, -1777 },
+                                        { 386998, 3265570, -2081 } }"
+                  polylineSegmentConn="{ {0, 1} }"
+                  radius="0.1"
+                  numElementsPerSegment="10">
+        <Perforation name="injector12_perf1"
+                     distanceFromHead="300"/>
+        <Perforation name="injector12_perf2"
+                     distanceFromHead="269"/>
+        <Perforation name="injector12_perf3"
+                     distanceFromHead="238"/>
+    </InternalWell>
+    
   </Mesh>
 
 
@@ -331,10 +356,10 @@
                    targetExactTimestep="1"
                    target="/Outputs/siloOutput" />
 
-    <!-- <PeriodicEvent name="vtk" -->
-    <!--                timeFrequency="5e6" -->
-    <!--                targetExactTimestep="1" -->
-    <!--                target="/Outputs/vtkOutput" /> -->
+    <PeriodicEvent name="vtk"
+                   timeFrequency="5e6"
+                   targetExactTimestep="1"
+                   target="/Outputs/vtkOutput" />
     
     <PeriodicEvent name="solverApplications"
                    maxEventDt="1.728e5"
@@ -383,6 +408,9 @@
                        materialList="{fluid1,relperm}"/> 
     <WellElementRegion name="wellRegion11"
                        materialList="{fluid1,relperm}"/> 
+    <WellElementRegion name="wellRegion12"
+                       materialList="{fluid1,relperm}"/> 
+
     
   </ElementRegions>
 
@@ -474,7 +502,7 @@
   </Functions>
 
   <Outputs>
-      <!-- <VTK name="vtkOutput"/>      -->
+      <VTK name="vtkOutput"/>
       <Silo name="siloOutput"/> 
       <Restart name="sidreRestart"/>
   </Outputs>

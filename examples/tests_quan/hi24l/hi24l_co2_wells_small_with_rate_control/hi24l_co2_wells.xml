@@ -12,7 +12,7 @@
                                wellRegion1,
                                wellRegion2}">
       <NonlinearSolverParameters newtonTol="1.0e-6"
-                                 lineSearchAction="0"
+                                 lineSearchAction="None"
                                  maxTimeStepCuts="10"
                                  dtIncIterLimit="0.2"
                                  newtonMaxIter="20"/>
