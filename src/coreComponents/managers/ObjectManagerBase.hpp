@@ -987,14 +987,7 @@ void ObjectManagerBase::FixUpDownMaps( TYPE_RELATION & relation,
       {
         if( relation[li][a] == unmappedLocalIndexValue )
         {
-	  if ( globalToLocal.count( globalIndices[a] ) == 1 )
-	  {  
-            relation[li][a] = globalToLocal.at( globalIndices[a] );
-	  }
-	  else
-	  {
-            relation[li][a] = 0;
-	  }
+          relation[li][a] = globalToLocal.at( globalIndices[a] );
         }
         else
         {

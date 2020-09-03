@@ -759,9 +759,8 @@ void CommunicationTools::FindGhosts( MeshLevel & meshLevel,
   removeUnusedNeighbors( nodeManager, edgeManager, faceManager, elemManager, neighbors );
   
   nodeManager.CompressRelationMaps();
-
-  //edgeManager.compressRelationMaps();
-  //faceManager.compressRelationMaps();
+  edgeManager.compressRelationMaps();
+  faceManager.compressRelationMaps();
   
   CommunicationTools::releaseCommID( commID );
 }

@@ -124,13 +124,6 @@ std::pair< vtkSmartPointer< vtkPoints >, vtkSmartPointer< vtkCellArray > >VTKPol
   {
     localIndex firstPoint = esr.nodeList()[edge][0];
     auto point = nodeManager.referencePosition()[firstPoint];
-
-    std::cout << "Rank #" << MpiWrapper::Comm_rank( MPI_COMM_GEOSX )
-              << " edge = " << edge
-              << " firstPoint = " << firstPoint
-              << " point = (" << point[0] << ", " << point[1] << ", " << point[2] << ")" 
-              << std::endl;
-    
     points->SetPoint( edge, point[0], point[1], point[2] );
     connectivity[0] = edge;
     connectivity[1] = edge+1; // We can do that because of the pattern in which the wells are stored
@@ -140,12 +133,6 @@ std::pair< vtkSmartPointer< vtkPoints >, vtkSmartPointer< vtkCellArray > >VTKPol
   {
     localIndex lastPoint = esr.nodeList()[ esr.size() -1  ][1];
     auto point = nodeManager.referencePosition()[lastPoint];
-
-    std::cout << "Rank #" << MpiWrapper::Comm_rank( MPI_COMM_GEOSX )
-              << " lastPoint = " << lastPoint      
-              << " point = (" << point[0] << ", " << point[1] << ", " << point[2] << ")" 
-              << std::endl;
-    
     points->SetPoint( esr.size(), point[0], point[1], point[2] );
   }
   return std::make_pair( points, cellsArray );
@@ -354,18 +341,13 @@ void VTKPolyDataWriterInterface::WriteWellElementRegions( real64 time, ElementRe
     auto esr = er.GetSubRegion( 0 )->group_cast< WellElementSubRegion const * >();
     if( esr->size() > 0 )
     {
-      std::cout << "rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX )  
-                << " er.getName() = " << er.getName()
-                << " esr.size() = " << esr->size()
-                << std::endl;
+      vtkSmartPointer< vtkUnstructuredGrid > ug = vtkUnstructuredGrid::New();
+      auto VTKWell = GetWell( *esr, nodeManager );
+      ug->SetPoints( VTKWell.first );
+      ug->SetCells( VTK_LINE, VTKWell.second );
+      WriteElementFields< WellElementSubRegion >( ug->GetCellData(), er );
+      WriteUnstructuredGrid( ug, time, er.getName() );
     }
-    
-    vtkSmartPointer< vtkUnstructuredGrid > ug = vtkUnstructuredGrid::New();
-    auto VTKWell = GetWell( *esr, nodeManager );
-    ug->SetPoints( VTKWell.first );
-    ug->SetCells( VTK_LINE, VTKWell.second );
-    WriteElementFields< WellElementSubRegion >( ug->GetCellData(), er );
-    WriteUnstructuredGrid( ug, time, er.getName() );
   } );
 }
 
@@ -497,38 +479,22 @@ string VTKPolyDataWriterInterface::GetTimeStepSubFolder( real64 time ) const
 
 void VTKPolyDataWriterInterface::Write( real64 time, integer cycle, DomainPartition const & domain )
 {
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":1 --------" << std::endl;
   CreateTimeStepSubFolder( time );
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":2 --------" << std::endl;  
   ElementRegionManager const & elemManager = *domain.getMeshBody( 0 )->getMeshLevel( 0 )->getElemManager();
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":3 --------" << std::endl;  
   NodeManager const & nodeManager = *domain.getMeshBody( 0 )->getMeshLevel( 0 )->getNodeManager();
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":4 --------" << std::endl;  
   EdgeManager const & edgeManager = *domain.getMeshBody( 0 )->getMeshLevel( 0 )->getEdgeManager();
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":5 --------" << std::endl;  
   WriteCellElementRegions( time, elemManager, nodeManager );
-  std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":6 --------" << std::endl;  
   WriteWellElementRegions( time, elemManager, nodeManager );
-  std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":7 --------" << std::endl;  
   WriteFaceElementRegions( time, elemManager, nodeManager );
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":8 --------" << std::endl;    
   WriteEmbeddedSurfaceElementRegions( time, elemManager, nodeManager, edgeManager );
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":9 --------" << std::endl;    
   string vtmPath = GetTimeStepSubFolder( time ) + ".vtm";
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":10 --------" << std::endl;    
   VTKVTMWriter vtmWriter( vtmPath );
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":11 --------" << std::endl;      
   WriteVTMFile( time, elemManager, vtmWriter );
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":12 --------" << std::endl;      
   if( cycle != m_previousCycle )
   {
-    //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":13 --------" << std::endl;        
     m_pvd.AddData( time, vtmPath );
-    //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":14 --------" << std::endl;        
     m_pvd.Save();
-    //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":15 --------" << std::endl;        
   }
-  //std::cout << "------- rank = " << MpiWrapper::Comm_rank( MPI_COMM_GEOSX ) << ":16 --------" << std::endl;      
   m_previousCycle = cycle;
 }
 }

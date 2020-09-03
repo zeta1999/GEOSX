@@ -260,7 +260,7 @@ void DomainPartition::SetupCommunications( bool use_nonblocking )
 
   faceManager->SortAllFaceNodes( nodeManager, meshLevel.getElemManager() );
   
-  //faceManager->computeGeometry( nodeManager );
+  faceManager->computeGeometry( nodeManager );
 
 }
 
