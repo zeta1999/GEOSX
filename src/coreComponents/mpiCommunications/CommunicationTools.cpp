@@ -549,7 +549,7 @@ void removeFromCommList( std::vector< localIndex > const & indicesToRemove, arra
 void fixReceiveLists( ObjectManagerBase & objectManager,
                       std::vector< NeighborCommunicator > const & neighbors )
 {
-  constexpr int nonLocalGhostsTag = 54673246;
+  int nonLocalGhostsTag = 45;
 
   std::vector< MPI_Request > nonLocalGhostsRequests( neighbors.size() );
 
@@ -749,19 +749,18 @@ void CommunicationTools::FindGhosts( MeshLevel & meshLevel,
   verifyGhostingConsistency( edgeManager, neighbors );
   faceManager.FixUpDownMaps( false );
   verifyGhostingConsistency( faceManager, neighbors );
-  
   elemManager.forElementSubRegions< ElementSubRegionBase >( [&]( ElementSubRegionBase & subRegion )
   {
     subRegion.FixUpDownMaps( false );
     verifyGhostingConsistency( subRegion, neighbors );
   } );
-  
+
   removeUnusedNeighbors( nodeManager, edgeManager, faceManager, elemManager, neighbors );
-  
+
   nodeManager.CompressRelationMaps();
   edgeManager.compressRelationMaps();
   faceManager.compressRelationMaps();
-  
+
   CommunicationTools::releaseCommID( commID );
 }
 

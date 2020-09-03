@@ -46,7 +46,7 @@ ComponentFractionKernel::
     totalDensity += compDens[ic] + dCompDens[ic];
   }
 
-  real64 const totalDensityInv = 1.0 / LvArray::math::max( 1e-10, totalDensity );
+  real64 const totalDensityInv = 1.0 / totalDensity;
 
   for( localIndex ic = 0; ic < NC; ++ic )
   {

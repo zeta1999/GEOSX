@@ -168,11 +168,10 @@ void ProblemManager::ProblemSetup()
   RegisterDataOnMeshRecursive( GetGroup< DomainPartition >( groupKeys.domain )->getMeshBodies() );
 
   Initialize( this );
-  
+
   ApplyInitialConditions();
- 
+
   InitializePostInitialConditions( this );
- 
 }
 
 
@@ -639,11 +638,8 @@ void ProblemManager::GenerateMesh()
   Group * commandLine = this->GetGroup< Group >( groupKeys.commandLine );
   integer const & useNonblockingMPI = commandLine->getReference< integer >( viewKeys.useNonblockingMPI );
   domain->SetupCommunications( useNonblockingMPI );
-
   faceManager->SetIsExternal();
-
   edgeManager->SetIsExternal( faceManager );
-  
 }
 
 
