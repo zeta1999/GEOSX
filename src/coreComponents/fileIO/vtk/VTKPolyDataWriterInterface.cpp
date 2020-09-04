@@ -114,7 +114,14 @@ std::pair< vtkSmartPointer< vtkPoints >, vtkSmartPointer< vtkCellArray > >VTKPol
                                                                                                                NodeManager const & nodeManager ) const
 {
   vtkSmartPointer< vtkPoints > points = vtkPoints::New();
-  points->SetNumberOfPoints( esr.size() + 1 );
+  if ( esr.size() == 0 )
+  {
+    points->SetNumberOfPoints( esr.size() );
+  }
+  else
+  {
+    points->SetNumberOfPoints( esr.size() + 1 );
+  }
   vtkSmartPointer< vtkCellArray > cellsArray = vtkCellArray::New();
   cellsArray->SetNumberOfCells( esr.size() );
   localIndex numberOfNodesPerElement = esr.numNodesPerElement();
@@ -339,15 +346,13 @@ void VTKPolyDataWriterInterface::WriteWellElementRegions( real64 time, ElementRe
   elemManager.forElementRegions< WellElementRegion >( [&]( WellElementRegion const & er )->void
   {
     auto esr = er.GetSubRegion( 0 )->group_cast< WellElementSubRegion const * >();
-    if( esr->size() > 0 )
-    {
-      vtkSmartPointer< vtkUnstructuredGrid > ug = vtkUnstructuredGrid::New();
-      auto VTKWell = GetWell( *esr, nodeManager );
-      ug->SetPoints( VTKWell.first );
-      ug->SetCells( VTK_LINE, VTKWell.second );
-      WriteElementFields< WellElementSubRegion >( ug->GetCellData(), er );
-      WriteUnstructuredGrid( ug, time, er.getName() );
-    }
+  
+    vtkSmartPointer< vtkUnstructuredGrid > ug = vtkUnstructuredGrid::New();
+    auto VTKWell = GetWell( *esr, nodeManager );
+    ug->SetPoints( VTKWell.first );
+    ug->SetCells( VTK_LINE, VTKWell.second );
+    WriteElementFields< WellElementSubRegion >( ug->GetCellData(), er );
+    WriteUnstructuredGrid( ug, time, er.getName() );
   } );
 }
 
