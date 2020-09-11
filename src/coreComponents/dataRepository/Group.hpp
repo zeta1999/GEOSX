@@ -1695,7 +1695,7 @@ T const * Group::GetGroupByPath( string const & path ) const
     }
     else
     {
-      return m_subGroups[child]->GetGroupByPath< T >( subPath );
+      return getGroupReference<>( child ).GetGroupByPath< T >( subPath );
     }
   }
 }

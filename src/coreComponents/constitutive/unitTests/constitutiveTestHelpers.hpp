@@ -44,12 +44,11 @@ void testNumericalDerivatives( dataRepository::Group & parent,
   auto const & phases = model.phaseNames();
 
   // create a clone of the rel perm to run updates on
-  std::unique_ptr< constitutive::ConstitutiveBase > modelCopyPtr;
-  model.DeliverClone( "fluidCopy", &parent, modelCopyPtr );
+  std::unique_ptr< constitutive::ConstitutiveBase > modelCopyPtr = model.deliverClone( "fluidCopy", &parent );
   MODEL & modelCopy = *modelCopyPtr->group_cast< MODEL * >();
 
-  model.AllocateConstitutiveData( model.getParent(), 1 );
-  modelCopy.AllocateConstitutiveData( model.getParent(), 1 );
+  model.allocateConstitutiveData( model.getParent(), 1 );
+  modelCopy.allocateConstitutiveData( model.getParent(), 1 );
 
   arraySlice1d< real64 const > const var = varAccessor( model );
   arraySlice2d< real64 const > const dPhaseRelPerm_dSat = dVar_dSat_accessor( model );

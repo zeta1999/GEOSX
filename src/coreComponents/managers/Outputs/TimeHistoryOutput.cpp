@@ -95,7 +95,7 @@ void TimeHistoryOutput::InitializePostSubGroups( Group * const group )
   }
 }
 
-void TimeHistoryOutput::Execute( real64 const GEOSX_UNUSED_PARAM( time_n ),
+bool TimeHistoryOutput::Execute( real64 const GEOSX_UNUSED_PARAM( time_n ),
                                  real64 const GEOSX_UNUSED_PARAM( dt ),
                                  integer const GEOSX_UNUSED_PARAM( cycleNumber ),
                                  integer const GEOSX_UNUSED_PARAM( eventCounter ),
@@ -110,6 +110,8 @@ void TimeHistoryOutput::Execute( real64 const GEOSX_UNUSED_PARAM( time_n ),
     th_io->write( );
   }
   m_recordCount += newBuffered;
+
+  return false;
 }
 
 void TimeHistoryOutput::Cleanup( real64 const time_n,

@@ -170,16 +170,24 @@ class RelPermTest : public ConstitutiveTestBase< RelativePermeabilityBase >
 public:
   void test( arraySlice1d< real64 const > const sat, real64 const eps, real64 const tol )
   {
+    arrayView3d< real64 const > phaseRelPerm;
+    arrayView4d< real64 const > dPhaseRelPerm_dPhaseVolFraction;
     testNumericalDerivatives( m_parent,
                               *m_model,
                               sat,
                               eps,
                               tol,
                               "phaseRelPerm",
-                              [] ( RelativePermeabilityBase & relPerm )
-                              { return relPerm.phaseRelPerm()[ 0 ][ 0 ]; },
-                              [] ( RelativePermeabilityBase & relPerm )
-                              { return relPerm.dPhaseRelPerm_dPhaseVolFraction()[ 0 ][ 0 ]; }
+                              [&phaseRelPerm] ( RelativePermeabilityBase & relPerm )
+                              {
+                                phaseRelPerm = relPerm.phaseRelPerm();
+                                return phaseRelPerm[ 0 ][ 0 ];
+                              },
+                              [&dPhaseRelPerm_dPhaseVolFraction] ( RelativePermeabilityBase & relPerm )
+                              {
+                                dPhaseRelPerm_dPhaseVolFraction = relPerm.dPhaseRelPerm_dPhaseVolFraction();
+                                return dPhaseRelPerm_dPhaseVolFraction[ 0 ][ 0 ];
+                              }
                              );
   }
 };

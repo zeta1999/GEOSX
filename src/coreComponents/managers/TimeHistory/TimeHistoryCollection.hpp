@@ -86,7 +86,7 @@ public:
    * @brief Collects history data.
    * @copydoc EventBase::Execute()
    */
-  virtual void Execute( real64 const time_n,
+  virtual bool Execute( real64 const time_n,
                         real64 const dt,
                         integer const cycleNumber,
                         integer const eventCounter,
@@ -112,6 +112,8 @@ public:
       buffer_unit_type * timeBuffer = m_timeBufferCall();
       memcpy( timeBuffer, &time_n, sizeof(time_n) );
     }
+
+    return false;
   }
 
   /**s

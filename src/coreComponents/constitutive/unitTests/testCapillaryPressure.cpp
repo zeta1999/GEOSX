@@ -143,17 +143,25 @@ class CapillaryPressureTest : public ConstitutiveTestBase< CapillaryPressureBase
 public:
   void test( arraySlice1d< real64 const > const sat, real64 const eps, real64 const tol )
   {
+    arrayView3d< real64 const > phaseCapPressure;
+    arrayView4d< real64 const > dPhaseCapPressure_dPhaseVolFraction;
     testNumericalDerivatives( m_parent,
                               *m_model,
                               sat,
                               eps,
                               tol,
                               "phaseRelPerm",
-                              [] ( CapillaryPressureBase & relPerm )
-                              { return relPerm.phaseCapPressure()[ 0 ][ 0 ]; },
-                              [] ( CapillaryPressureBase & relPerm )
-                              { return relPerm.dPhaseCapPressure_dPhaseVolFraction()[ 0 ][ 0 ]; }
-                              );
+                              [&phaseCapPressure] ( CapillaryPressureBase & relPerm )
+                              {
+                                phaseCapPressure = relPerm.phaseCapPressure();
+                                return phaseCapPressure[ 0 ][ 0 ];
+                              },
+                              [&dPhaseCapPressure_dPhaseVolFraction] ( CapillaryPressureBase & relPerm )
+                              { 
+                                dPhaseCapPressure_dPhaseVolFraction = relPerm.dPhaseCapPressure_dPhaseVolFraction();
+                                return dPhaseCapPressure_dPhaseVolFraction[ 0 ][ 0 ];
+                              }
+                             );
   }
 };
 

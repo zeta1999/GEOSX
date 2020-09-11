@@ -79,8 +79,9 @@ ProblemManager::ProblemManager( std::string const & name, conduit::Node & root )
   RegisterGroup< MeshManager >( groupKeys.meshManager );
   RegisterGroup< OutputManager >( groupKeys.outputManager );
   m_physicsSolverManager = RegisterGroup< PhysicsSolverManager >( groupKeys.physicsSolverManager );
+  RegisterGroup< TasksManager >( groupKeys.tasksManager );
   m_functionManager = RegisterGroup< FunctionManager >( groupKeys.functionManager );
-
+    
   // Command line entries
   commandLine->registerWrapper< string >( viewKeys.inputFileName.Key() )->
     setRestartFlags( RestartFlags::WRITE )->
