@@ -16,6 +16,19 @@ blt_add_library( NAME pygeosx
                  CLEAR_PREFIX TRUE
                  )
 
+add_custom_command(TARGET pygeosx
+                   PRE_BUILD
+                   COMMAND ${Python3_EXECUTABLE} -m venv PYGEOSX --system-site-packages
+                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_custom_command(TARGET pygeosx
+                   POST_BUILD
+                   COMMAND ln -sf ${CMAKE_BINARY_DIR}/lib/pygeosx.so ${CMAKE_BINARY_DIR}/PYGEOSX/lib/python3.8/site-packages/)
+
+add_custom_command(TARGET pygeosx
+                   POST_BUILD
+                   COMMAND ln -sf ${CMAKE_BINARY_DIR}/lib/pylvarray.so ${CMAKE_BINARY_DIR}/PYGEOSX/lib/python3.8/site-packages/)
+
 target_include_directories( pygeosx PUBLIC ${CMAKE_SOURCE_DIR}/coreComponents )
 
 geosx_add_code_checks( PREFIX pygeosx )
