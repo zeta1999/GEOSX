@@ -40,7 +40,10 @@ std::unique_ptr< GeosxState > g_state;
 static constexpr char const * initializeDocString =
 "initialize(rank, args)\n"
 "--\n\n"
-"Initialize GEOSX, this must be the first module call.\n"
+"Initialize GEOSX, this must be the first module call.\n\n"
+"Should only be called once. All calls after the first will\n"
+"raise a `RuntimeError`. To reinitialize GEOSX for a new problem,\n"
+"use the `reinit` function.\n"
 "\n"
 "Parameters\n"
 "__________\n"
@@ -99,7 +102,20 @@ static PyObject * initialize( PyObject * self, PyObject * args )
   return python::createNewPyGroup( g_state->getProblemManagerAsGroup() );
 }
 
-static constexpr char const * reinitDocString = "";
+static constexpr char const * reinitDocString =
+"reinit(args)\n"
+"--\n\n"
+"Reinitialize GEOSX with a new set of command-line arguments.\n"
+"\n"
+"Parameters\n"
+"__________\n"
+"args : list of strings\n"
+"    The list of command line arguments to pass to GEOSX.\n"
+"\n"
+"Returns\n"
+"_______\n"
+"Group\n"
+"    The ProblemManager.";
 static PyObject * reinit( PyObject * self, PyObject * args )
 {
   GEOSX_UNUSED_VAR( self );
@@ -184,7 +200,7 @@ static PyObject * run( PyObject * self, PyObject * args )
 }
 
 static constexpr char const * finalizeDocString =
-"finalize()\n"
+"_finalize()\n"
 "--\n\n"
 "Finalize GEOSX. After this no calls into pygeosx or to MPI are allowed.\n"
 "\n"
@@ -242,7 +258,7 @@ static bool addExitHandler( PyObject * module ){
   if ( atexit_register_pyfunc == nullptr )
   { return false; }
 
-  LvArray::python::PyObjectRef<> finalize_pyfunc { PyObject_GetAttrString( module, "finalize" ) };
+  LvArray::python::PyObjectRef<> finalize_pyfunc { PyObject_GetAttrString( module, "_finalize" ) };
   if ( finalize_pyfunc == nullptr )
   { return false; }
 
@@ -264,7 +280,7 @@ static PyMethodDef pygeosxFuncs[] = {
   { "reinit", geosx::reinit, METH_VARARGS, geosx::reinitDocString },
   { "apply_initial_conditions", geosx::applyInitialConditions, METH_NOARGS, geosx::applyInitialConditionsDocString },
   { "run", geosx::run, METH_NOARGS, geosx::runDocString },
-  { "finalize", geosx::finalize, METH_NOARGS, geosx::finalizeDocString },
+  { "_finalize", geosx::finalize, METH_NOARGS, geosx::finalizeDocString },
   { nullptr, nullptr, 0, nullptr }        /* Sentinel */
 };
 
