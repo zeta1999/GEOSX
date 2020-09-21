@@ -19,8 +19,9 @@
 #include "SinglePhaseHybridFVM.hpp"
 
 #include "common/TimingMacros.hpp"
-#include "mpiCommunications/CommunicationTools.hpp"
 #include "constitutive/fluid/SingleFluidBase.hpp"
+#include "finiteVolume/FluxApproximationBase.hpp"
+#include "mpiCommunications/CommunicationTools.hpp"
 
 
 /**
@@ -181,6 +182,10 @@ void SinglePhaseHybridFVM::AssembleFluxTerms( real64 const GEOSX_UNUSED_PARAM( t
   NodeManager const & nodeManager = *mesh.getNodeManager();
   FaceManager const & faceManager = *mesh.getFaceManager();
 
+  NumericalMethodsManager const & numericalMethodManager = domain.getNumericalMethodManager();
+  FiniteVolumeManager const & fvManager = numericalMethodManager.getFiniteVolumeManager();
+  FluxApproximationBase const & fluxApprox = fvManager.getFluxApproximation( m_discretizationName );
+
   // node data (for transmissibility computation)
 
   arrayView2d< real64 const, nodes::REFERENCE_POSITION_USD > const & nodePosition = nodeManager.referencePosition();
@@ -208,6 +213,12 @@ void SinglePhaseHybridFVM::AssembleFluxTerms( real64 const GEOSX_UNUSED_PARAM( t
   // get the face-centered depth
   arrayView1d< real64 const > const & faceGravCoef =
     faceManager.getReference< array1d< real64 > >( viewKeyStruct::gravityCoefString );
+
+  // get the face-centered transMultiplier
+  // TODO: implement some kind of HybridFVMApprox that inherits from FluxApproximationBase
+  string const & coeffName = fluxApprox.getReference< string >( FluxApproximationBase::viewKeyStruct::coeffNameString );
+  arrayView1d< real64 const > const & transMultiplier =
+    faceManager.getReference< array1d< real64 > >( coeffName + FluxApproximationBase::viewKeyStruct::transMultiplierString );
 
   // get the face-to-nodes connectivity for the transmissibility calculation
   ArrayOfArraysView< localIndex const > const & faceToNodes = faceManager.nodeList().toViewConst();
@@ -245,6 +256,7 @@ void SinglePhaseHybridFVM::AssembleFluxTerms( real64 const GEOSX_UNUSED_PARAM( t
                                         facePres,
                                         dFacePres,
                                         faceGravCoef,
+                                        transMultiplier,
                                         m_mobility.toNestedViewConst(),
                                         m_dMobility_dPres.toNestedViewConst(),
                                         elemDofNumber.toNestedViewConst(),
@@ -256,7 +268,6 @@ void SinglePhaseHybridFVM::AssembleFluxTerms( real64 const GEOSX_UNUSED_PARAM( t
   } );
 }
 
-
 void SinglePhaseHybridFVM::ApplyBoundaryConditions( real64 const time_n,
                                                     real64 const dt,
                                                     DomainPartition & domain,
@@ -267,7 +278,6 @@ void SinglePhaseHybridFVM::ApplyBoundaryConditions( real64 const time_n,
   GEOSX_MARK_FUNCTION;
 
   SinglePhaseBase::ApplyBoundaryConditions( time_n, dt, domain, dofManager, localMatrix, localRhs );
-  // TODO: implement face boundary conditions here
 }
 
 
@@ -369,11 +379,10 @@ real64 SinglePhaseHybridFVM::CalculateResidualNorm( DomainPartition const & doma
 }
 
 
-bool
-SinglePhaseHybridFVM::CheckSystemSolution( DomainPartition const & domain,
-                                           DofManager const & dofManager,
-                                           arrayView1d< real64 const > const & localSolution,
-                                           real64 const scalingFactor )
+bool SinglePhaseHybridFVM::CheckSystemSolution( DomainPartition const & domain,
+                                                DofManager const & dofManager,
+                                                arrayView1d< real64 const > const & localSolution,
+                                                real64 const scalingFactor )
 {
   MeshLevel const & mesh = *domain.getMeshBody( 0 )->getMeshLevel( 0 );
   FaceManager const & faceManager = *mesh.getFaceManager();
