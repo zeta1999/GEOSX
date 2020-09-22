@@ -142,9 +142,11 @@ static PyObject * PyGroup_wrappers( PyGroup * const self, PyObject * const args 
 }
 
 static constexpr char const * PyGroup_getGroupDocString =
-"get_group(self, path)\n"
+"get_group(self, path, default, /)\n"
 "--\n\n"
-"Return the `Group` at the relative path `path` or `None` if it doesn't exist.\n"
+"Return the ``Group`` at the relative path ``path``; ``default`` is optional.\n\n"
+"If no group exists and ``default`` is not given, raise a ``ValueError``;\n"
+"otherwise return ``default``.\n"
 "\n"
 "Parameters\n"
 "__________\n"
@@ -161,7 +163,8 @@ static PyObject * PyGroup_getGroup( PyGroup * const self, PyObject * const args 
   VERIFY_INITIALIZED( self );
 
   PyObject * unicodePath;
-  if ( !PyArg_ParseTuple( args, "U", &unicodePath ) )
+  PyObject * defaultReturnValue = nullptr;
+  if ( !PyArg_ParseTuple( args, "U|O", &unicodePath, &defaultReturnValue ) )
   { return nullptr; }
 
   LvArray::python::PyObjectRef<> asciiPath { PyUnicode_AsASCIIString( unicodePath ) };
@@ -173,10 +176,14 @@ static PyObject * PyGroup_getGroup( PyGroup * const self, PyObject * const args 
   { return nullptr; }
 
   dataRepository::Group * const result = self->group->GetGroupByPath( path );
-  if ( result == nullptr )
+  if ( result == nullptr && defaultReturnValue == nullptr )
   {
-    GEOSX_LOG_RANK( "Group " << self->group->getPath() << "/" << path << " does not exist." );
-    Py_RETURN_NONE;
+    PyErr_SetString(PyExc_ValueError, ( "No Group at " + self->group->getPath() + "/" + path ).c_str() );
+    return nullptr;
+  }
+  else if ( result == nullptr ){
+    Py_INCREF( defaultReturnValue );
+    return defaultReturnValue;
   }
 
   // Create a new Group and set the dataRepository::Group it points to.
@@ -184,9 +191,11 @@ static PyObject * PyGroup_getGroup( PyGroup * const self, PyObject * const args 
 }
 
 static constexpr char const * PyGroup_getWrapperDocString =
-"get_wrapper(self, path)\n"
+"get_wrapper(self, path, default, /)\n"
 "--\n\n"
-"Return the ``Wrapper`` at the relative path ``path`` or ``None`` if it doesn't exist.\n"
+"Return the `Wrapper` at the relative path ``path``; ``default`` is optional.\n\n"
+"If no wrapper exists and ``default`` is not given, raise a ``ValueError``;\n"
+"otherwise return ``default``.\n"
 "\n"
 "Parameters\n"
 "__________\n"
@@ -203,7 +212,8 @@ static PyObject * PyGroup_getWrapper( PyGroup * const self, PyObject * const arg
   VERIFY_INITIALIZED( self );
 
   PyObject * unicodePath;
-  if ( !PyArg_ParseTuple( args, "U", &unicodePath ) )
+  PyObject * defaultReturnValue = nullptr;
+  if ( !PyArg_ParseTuple( args, "U|O", &unicodePath, &defaultReturnValue ) )
   { return nullptr; }
 
   LvArray::python::PyObjectRef<> asciiPath { PyUnicode_AsASCIIString( unicodePath ) };
@@ -218,25 +228,24 @@ static PyObject * PyGroup_getWrapper( PyGroup * const self, PyObject * const arg
   splitPath( path, groupPath, wrapperName );
 
   dataRepository::Group * const group = self->group->GetGroupByPath( groupPath );
-  if ( group == nullptr )
-  {
-    GEOSX_LOG_RANK( "Group " << self->group->getPath() << "/" << groupPath << " does not exist." );
-    Py_RETURN_NONE;
-  }
 
-  dataRepository::WrapperBase * const wrapper = group->getWrapperBase( wrapperName );
-  if ( wrapper == nullptr )
+  dataRepository::WrapperBase * const result = group->getWrapperBase( wrapperName );
+  if ( result == nullptr && defaultReturnValue == nullptr )
   {
-    GEOSX_LOG_RANK( "Goup " << group->getPath() << " doesn't have a wrapper " << wrapperName );
-    Py_RETURN_NONE;
+    PyErr_SetString(PyExc_ValueError, ( "No Wrapper at " + self->group->getPath() + "/" + groupPath ).c_str() );
+    return nullptr;
+  }
+  else if ( result == nullptr ){
+    Py_INCREF( defaultReturnValue );
+    return defaultReturnValue;
   }
 
   // Create a new Group and set the dataRepository::Group it points to.
-  return createNewPyWrapper( *wrapper );
+  return createNewPyWrapper( *result );
 }
 
 static constexpr char const * PyGroup_registerDocString =
-"register(self, callback)\n"
+"register(self, callback, /)\n"
 "--\n\n"
 "Register a callback on the physics solver.\n\n"
 "Raise TypeError if this group is not the Physics solver.\n";

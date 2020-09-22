@@ -42,7 +42,7 @@ printAndFlush( "In python before initialization." )
 problem = pygeosx.initialize( rank, sys.argv )
 
 try:
-    problem.get_group("Solvers/lagsolve").register(callback)
+    problem.get_group("Solvers/lagsolve", None).register(callback)
 except AttributeError:
     pass
 
