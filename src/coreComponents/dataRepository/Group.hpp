@@ -40,7 +40,6 @@ namespace conduit
 class Node;
 }
 
-
 /**
  * namespace to encapsulate GEOSX
  */
@@ -1395,6 +1394,19 @@ public:
   void setInputFlags( InputFlags flags ) { m_input_flags = flags; }
 
   ///@}
+
+  /**
+   * @brief Register a callback function on the group
+   * @param func the function to register
+   * @param funcType the type of the function to register
+   * @return true if successful, false else
+   */
+  virtual bool registerCallback( void * func, const std::type_info& funcType )
+  {
+    GEOSX_UNUSED_VAR( func );
+    GEOSX_UNUSED_VAR( funcType );
+    return false;
+  }
 
   /**
    * @name Restart output methods

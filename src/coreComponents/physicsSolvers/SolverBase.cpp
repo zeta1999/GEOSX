@@ -463,6 +463,9 @@ real64 SolverBase::NonlinearImplicitStep( real64 const & time_n,
                                m_localMatrix.toViewConstSizes(),
                                m_localRhs.toView() );
 
+      if ( m_assemblyCallback )
+      { m_assemblyCallback( m_localMatrix, m_localRhs ); }
+
       // TODO: maybe add scale function here?
       // Scale()
 

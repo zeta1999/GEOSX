@@ -235,6 +235,33 @@ static PyObject * PyGroup_getWrapper( PyGroup * const self, PyObject * const arg
   return createNewPyWrapper( *wrapper );
 }
 
+static constexpr char const * PyGroup_registerDocString =
+"register(self, callback)\n"
+"--\n\n"
+"Register a callback on the physics solver.\n\n"
+"Raise TypeError if this group is not the Physics solver.\n";
+static PyObject * PyGroup_register( PyGroup * const self, PyObject * const args )
+{
+  VERIFY_NON_NULL_SELF( self );
+  VERIFY_INITIALIZED( self );
+
+  PyObject * callback;
+  if ( !PyArg_ParseTuple( args, "O", &callback ) )
+  { return nullptr; }
+  if ( !PyCallable_Check( callback ) ){
+    PyErr_SetString( PyExc_TypeError, "callback is not callable" );
+    return nullptr;
+  }
+  if ( self->group->registerCallback( callback, typeid( callback ) ) ){
+    Py_RETURN_NONE;
+  }
+  PyErr_SetString(PyExc_TypeError, "Group does not contain physics solver");
+  return nullptr;
+}
+
+
+
+
 BEGIN_ALLOW_DESIGNATED_INITIALIZERS
 
 static PyMethodDef PyGroup_methods[] = {
@@ -242,6 +269,7 @@ static PyMethodDef PyGroup_methods[] = {
   { "wrappers", (PyCFunction) PyGroup_wrappers, METH_NOARGS, PyGroup_wrappersDocString },
   { "get_group", (PyCFunction) PyGroup_getGroup, METH_VARARGS, PyGroup_getGroupDocString },
   { "get_wrapper", (PyCFunction) PyGroup_getWrapper, METH_VARARGS, PyGroup_getWrapperDocString },
+  { "register", (PyCFunction) PyGroup_register, METH_VARARGS, PyGroup_registerDocString },
   { nullptr, nullptr, 0, nullptr } // Sentinel
 };
 

@@ -658,6 +658,24 @@ public:
 
   string getDiscretizationName() const {return m_discretizationName;}
 
+  virtual bool registerCallback( void * func, const std::type_info& funcType ) final override
+  {
+    if ( std::type_index( funcType ) == std::type_index( typeid( std::function< void( CRSMatrix< real64, globalIndex >, array1d< real64 > ) > ) ) ){
+      m_assemblyCallback = *reinterpret_cast< std::function< void( CRSMatrix< real64, globalIndex >, array1d< real64 > ) > * >( func );
+      return true;
+    }
+
+    #if defined(GEOSX_USE_PYTHON)
+    {
+      if ( std::type_index( funcType ) == std::type_index( typeid( PyObject * ) ) ){
+        m_assemblyCallback = LvArray::python::PythonFunction< CRSMatrix< real64, globalIndex >, array1d< real64 > >{ reinterpret_cast< PyObject * >( func ) };
+        return true;
+      }
+    }
+    #endif
+    return false;
+  }
+
 protected:
 
   static real64 EisenstatWalker( real64 const newNewtonNorm,
@@ -732,6 +750,8 @@ protected:
 
   /// Nonlinear solver parameters
   NonlinearSolverParameters m_nonlinearSolverParameters;
+
+  std::function< void( CRSMatrix< real64, globalIndex >, array1d< real64 > ) > m_assemblyCallback;
 
 private:
 

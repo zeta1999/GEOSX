@@ -6,13 +6,16 @@ from mpi4py import MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
+
 def printAndFlush( msg ):
     print( "Rank {}: {}".format( rank, msg ) )
     sys.stdout.flush()
 
+
 def printWithIndent( msg, indent ):
     indentString = " " * indent
     print( indentString + msg.replace( "\n", "\n" + indentString ) )
+
 
 def printGroup( group, indent=0 ):
     print( "{}{}".format( " " * indent, group ) )
@@ -30,9 +33,18 @@ def printGroup( group, indent=0 ):
         printGroup( subGroup, indent + 4 )
 
 
+def callback(matrix, array):
+    pass
+
+
 printAndFlush( "In python before initialization." )
 
 problem = pygeosx.initialize( rank, sys.argv )
+
+try:
+    problem.get_group("Solvers/lagsolve").register(callback)
+except AttributeError:
+    pass
 
 currentTime = problem.get_wrapper( "Events/time" ).value( False )
 printAndFlush( "In python after initialization: current time = {}".format( currentTime[ 0 ] ) )
