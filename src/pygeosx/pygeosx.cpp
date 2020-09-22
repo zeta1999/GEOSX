@@ -195,9 +195,10 @@ static PyObject * run( PyObject * self, PyObject * args )
 
   PYTHON_ERROR_IF( g_state == nullptr, PyExc_RuntimeError, "state must be initialized", nullptr );
 
-  g_state->run();
   // check for python errors raised before returning
-  if( PyErr_Occurred() != nullptr ){
+  try {
+    g_state->run();
+  } catch (const LvArray::python::PythonError&) {
     return nullptr;
   }
   return PyLong_FromLong( static_cast< int >( g_state->getState() ) );
