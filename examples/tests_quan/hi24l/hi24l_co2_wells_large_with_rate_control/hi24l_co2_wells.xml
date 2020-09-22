@@ -65,73 +65,73 @@
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls2"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls3"
                       type="injector"
                       control="liquidRate" 
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls4"
                       type="injector"
                       control="liquidRate" 
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls5"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls6"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls7"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls8"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>              
         <WellControls name="wellControls9"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls10"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls11"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
         <WellControls name="wellControls12"
                       type="injector"
                       control="liquidRate"
                       targetBHP="1e8"
-                      targetRate="3e1"
+                      targetRate="1e1"
                       injectionStream="{0.995, 0.005}"/>
     </CompositionalMultiphaseWell>
 
@@ -349,20 +349,14 @@
   </Mesh>
 
 
-  <Events maxTime="4e7">
-
-    <PeriodicEvent name="silo"
-                   timeFrequency="5e6"
-                   targetExactTimestep="1"
-                   target="/Outputs/siloOutput" />
+  <Events maxTime="3.1536e8">
 
     <PeriodicEvent name="vtk"
-                   timeFrequency="5e6"
+                   timeFrequency="5e7"
                    targetExactTimestep="1"
                    target="/Outputs/vtkOutput" />
     
     <PeriodicEvent name="solverApplications"
-                   maxEventDt="1.728e5"
                    target="/Solvers/reservoirSystem" />
 
     <PeriodicEvent name="restarts"
@@ -422,11 +416,11 @@
                                    phasePVTParaFiles="{pvtgas.txt, pvtliquid.txt}"
                                    flashModelParaFile="co2flash.txt"/>
     <PoreVolumeCompressibleSolid name="rock"
-                                 referencePressure="0.0"
-                                 compressibility="1e-9"/>
+                                 referencePressure="1e7"
+                                 compressibility="4.5e-10"/>
     <BrooksCoreyRelativePermeability name="relperm"
                                      phaseNames="{gas, water}"
-                                     phaseMinVolumeFraction="{0.05, 0.05}"
+                                     phaseMinVolumeFraction="{0.05, 0.30}"
                                      phaseRelPermExponent="{2.0, 2.0}"
                                      phaseRelPermMaxValue="{1, 1}"/>
   
@@ -440,7 +434,7 @@
                setNames="{all}"
                objectPath="ElementRegions/reservoir/Reservoir_TETRA"
                fieldName="permeability"
-               scale="1.0e-12"/>
+               scale="1.0e-13"/>
 
     <FieldSpecification name="Permy1"
                component="1"
@@ -448,7 +442,7 @@
                setNames="{all}"
                objectPath="ElementRegions/reservoir/Reservoir_TETRA"
                fieldName="permeability"
-               scale="1.0e-12"/>
+               scale="1.0e-13"/>
 
     <FieldSpecification name="Permz1"
                component="2"
@@ -456,14 +450,14 @@
                setNames="{all}"
                objectPath="ElementRegions/reservoir/Reservoir_TETRA"
                fieldName="permeability"
-               scale="1.0e-12"/>
+               scale="1.0e-13"/>
 
     <FieldSpecification name="ReferencePorosity1"
                initialCondition="1"
                setNames="{all}"
                objectPath="ElementRegions/reservoir/Reservoir_TETRA"
                fieldName="referencePorosity"
-               scale="0.05"/>
+               scale=".12"/>
     
     <FieldSpecification name="initialPressure"
                initialCondition="1"
@@ -488,6 +482,12 @@
                fieldName="globalCompFraction"
                component="1"
                scale="0.9999"/>
+
+    <FieldSpecification name="barrierTransMult"
+               objectPath="faceManager"
+               fieldName="permeabilityTransMultiplier"
+               scale="0.0"
+               setNames="{ f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23, f24, f25, f26, f27, f28, f29, f30, f31, f32 }"/>
     
   </FieldSpecifications>
 
@@ -503,7 +503,6 @@
 
   <Outputs>
       <VTK name="vtkOutput"/>
-      <Silo name="siloOutput"/> 
       <Restart name="sidreRestart"/>
   </Outputs>
 </Problem>
